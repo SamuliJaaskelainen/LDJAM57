@@ -16,9 +16,12 @@ extern const unsigned char	ugtbatch_tiles_bin[480];
 extern const unsigned char	ugtbatch_metatiles_bin[144];
 #define				ugtbatch_metatiles_bin_size 144
 #define				ugtbatch_metatiles_bin_bank 2
+extern const unsigned char	pollen_tiles_bin[128];
+#define				pollen_tiles_bin_size 128
+#define				pollen_tiles_bin_bank 2
+extern const unsigned char	kaijulove_psg[3087];
+#define				kaijulove_psg_size 3087
+#define				kaijulove_psg_bank 2
 extern const unsigned char	explosion0_psg[83];
 #define				explosion0_psg_size 83
 #define				explosion0_psg_bank 2
-extern const unsigned char	soundtest_psg[3961];
-#define				soundtest_psg_size 3961
-#define				soundtest_psg_bank 2
