@@ -7,8 +7,6 @@
 #include "resources.c"
 #include "objects.c"
 
-void RenderSprites();
-void RenderSpritesUnsafe();
 void UpdatePlayer(char i);
 void MovePlayerNoCollision(char i);
 void MovePlayer(char i);
@@ -16,8 +14,6 @@ void MoveUp(char i);
 void MoveDown(char i);
 void MoveLeft(char i);
 void MoveRight(char i);
-void StartActionOne(char i);
-void StartActionTwo(char i);
 void UpdateAction(char i);
 void MetatileInteraction(unsigned char * metatile);
 char GetTopLeftMetatile(char i);
@@ -38,6 +34,8 @@ char IsPlayerUpLeftBlocked(char i);
 char IsPlayerUpRightBlocked(char i);
 char IsPlayerDownLeftBlocked(char i);
 char IsPlayerDownRightBlocked(char i);
+void RenderSprites(void);
+void RenderSpritesUnsafe(void);
 
 #define DIRECTION_NONE  	    0
 #define DIRECTION_UP 			1
@@ -74,18 +72,20 @@ char IsPlayerDownRightBlocked(char i);
 #define START_WOLRD_OFFSET_X 768
 #define START_WOLRD_OFFSET_Y 832
 
-const unsigned char PLAYER_SPEED_DEFAULT = 2;
+const unsigned char PLAYER_SPEED_DEFAULT =  2;
 const unsigned char PLAYER_SPEED_DIAGONAL = 1;
 
-const char SCREEN_EDGE_Y       = 96;
-const char SCREEN_EDGE_X_INNER = 120;
-const char SCREEN_EDGE_X_OUTER = 136;
+const unsigned char SCREEN_EDGE_Y       = 96;
+const unsigned char SCREEN_EDGE_X_INNER = 120;
+const unsigned char SCREEN_EDGE_X_OUTER = 136;
 
 // Only Player One scrolls
 unsigned char scrollXTotal = 0;
 unsigned char scrollYTotal = 0;
 unsigned char scrollXOffset = 0;
 unsigned char scrollYOffset = 0;
+
+unsigned char playerTwoJoined = 0;
 
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 
@@ -106,10 +106,8 @@ void main(void)
     SMS_VRAMmemsetW(0, 0, 0);
     SMS_mapROMBank(2);
 	SMS_loadBGPalette(&ugtbatch_palette_bin);
-	SMS_loadSpritePalette(spritepalette_pal_bin);
+	SMS_loadSpritePalette(&spritepalette_pal_bin);
     SMS_loadTiles(&ugtbatch_tiles_bin, 0, ugtbatch_tiles_bin_size);
-    //SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
-    //SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
     SMS_displayOn();
 
     // Setup scrolltable
@@ -122,8 +120,8 @@ void main(void)
     scrollYTotal = START_WOLRD_OFFSET_Y;
     GSL_refreshVDP();
 
-    // Play music
-    PSGPlay(&music_psg);
+    // Init audio & play music
+    PSGPlay(&soundtest_psg);
 
     // Init player variables
     for(char i = 0; i < PLAYER_COUNT; ++i)
@@ -132,7 +130,7 @@ void main(void)
         playersSprites[i].positionY = PLAYER_START_Y;
         playersSprites[i].spriteX = PLAYER_SPRITE_START_X;
         playersSprites[i].spriteY = PLAYER_SPRITE_START_Y;
-        playersSprites[i].isVisible = i == 0; // ONLY SHOW PLAYER ONE FOR NOW
+        playersSprites[i].isVisible = i == 0;
         playersSprites[i].size = 16;
         playersSprites[i].speed = PLAYER_SPEED_DEFAULT;
         playersSprites[i].animationFrameCounter = 0;
@@ -141,8 +139,9 @@ void main(void)
         setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
         playersSprites[i].direction = DIRECTION_DOWN;
         playersSprites[i].bank = 2;
-        playersSprites[i].romDataAddress = 8192;
-
+        playersSprites[i].ramDataAddress = i == 0 ? 8192 : 8320;
+        playersSprites[i].spriteOneIndex = (i << 2);
+        playersSprites[i].spriteTwoIndex = 2 + (i << 2);
         players[i].action = ACTION_STATIONARY;
         players[i].actionCount = 0;
         players[i].actionOnePressed = 0;
@@ -174,15 +173,15 @@ void main(void)
     }
 }
 
-void RenderSprites()
+void RenderSprites(void)
 {
     for(char i = 0; i < PLAYER_COUNT; ++i)
     {
-        if(!playersSprites[i].isVisible) return;
+        if(!playersSprites[i].isVisible) continue;
 
         // Add player sprites, tall mode is in use
-        SMS_addSprite(playersSprites[i].spriteX + 248, playersSprites[i].spriteY + 248, 0);
-        SMS_addSprite(playersSprites[i].spriteX, playersSprites[i].spriteY + 248, 2);
+        SMS_addSprite(playersSprites[i].spriteX + 248, playersSprites[i].spriteY + 248, playersSprites[i].spriteOneIndex);
+        SMS_addSprite(playersSprites[i].spriteX, playersSprites[i].spriteY + 248, playersSprites[i].spriteTwoIndex);
 
         // Update animation frames
         if(playersSprites[i].animationFrameCounter > PLAYER_ANIMATION_HOLD_DURATION)
@@ -198,17 +197,17 @@ void RenderSprites()
         {
             case DIRECTION_UP:
                 if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveUp);
-                else if(players[i].action == ACTION_ONE) for(char i = 0; i< 4; ++i) setSpriteAnimation(&playersSprites[i], playerAnimOne);
-                else if(players[i].action == ACTION_TWO) for(char i = 0; i< 4; ++i) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+                else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
+                else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
                 else setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
-                break;
+            break;
 
             case DIRECTION_DOWN:
                 if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveDown);
                 else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
                 else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
                 else setSpriteAnimation(&playersSprites[i], playerAnimIdleDown);
-                break;
+            break;
 
             case DIRECTION_LEFT:
             case DIRECTION_UP_LEFT:
@@ -217,7 +216,7 @@ void RenderSprites()
                 else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
                 else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
                 else setSpriteAnimation(&playersSprites[i], playerAnimIdleLeft);
-                break;
+            break;
 
             case DIRECTION_RIGHT:
             case DIRECTION_UP_RIGHT:
@@ -226,19 +225,19 @@ void RenderSprites()
                 else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
                 else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
                 else setSpriteAnimation(&playersSprites[i], playerAnimIdleRight);
-                break;
+            break;
         }
     }
 }
 
-void RenderSpritesUnsafe()
+void RenderSpritesUnsafe(void)
 {
     for(char i = 0; i< PLAYER_COUNT; ++i)
     {
         if(!playersSprites[i].isVisible) return;
 
         SMS_mapROMBank(playersSprites[i].bank);
-        UNSAFE_SMS_VRAMmemcpy128(playersSprites[i].romDataAddress, &player_tiles_bin[playersSprites[i].animationFrameData[playersSprites[i].currentAnimationFrame]]);
+        UNSAFE_SMS_VRAMmemcpy128(playersSprites[i].ramDataAddress, &player_tiles_bin[playersSprites[i].animationFrameData[playersSprites[i].currentAnimationFrame]]);
     }
 }
 
@@ -257,46 +256,108 @@ void UpdatePlayer(char i)
     // Read gamepad
     unsigned int ks = SMS_getKeysStatus();
 
-    // TODO READ PLAYER TWO KEYS
+    // TSpawn second player if they have not joined
+    if(i == 1 && !playerTwoJoined)
+    {
+        if ((ks & PORT_B_KEY_1) || (ks & PORT_B_KEY_2))
+        {
+            playerTwoJoined = 1;
+            playersSprites[1].isVisible = 1;
+            playersSprites[1].positionX = playersSprites[0].positionX;
+            playersSprites[1].positionY = playersSprites[0].positionY;
+        }
+    }
 
-    // Reset action buttons
-    if (!(ks & PORT_A_KEY_1)) players[i].actionOnePressed = 0;
-    if (!(ks & PORT_A_KEY_2)) players[i].actionTwoPressed = 0;
+    if(i == 0)
+    {
+        // Reset action buttons
+        if (!(ks & PORT_A_KEY_1)) players[i].actionOnePressed = 0;
+        if (!(ks & PORT_A_KEY_2)) players[i].actionTwoPressed = 0;
 
-    // Start actions
-    if (players[i].actionOnePressed == 0 && (ks & PORT_A_KEY_1))
-	{
-		StartActionOne(i);
-		return;
-	}
-	else if (players[i].actionTwoPressed == 0 && (ks & PORT_A_KEY_2))
-	{
-		StartActionTwo(i);
-		return;
-	}
+        // Start actions
+        if (players[i].actionOnePressed == 0 && (ks & PORT_A_KEY_1))
+        {
+            players[i].actionOnePressed = 1;
+            players[i].action = ACTION_ONE;
+            players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
+            return;
+        }
+        else if (players[i].actionTwoPressed == 0 && (ks & PORT_A_KEY_2))
+        {
+            players[i].actionTwoPressed = 1;
+            players[i].action = ACTION_TWO;
+            players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
+            return;
+        }
 
-    // Read movement keys
-	if (ks & PORT_A_KEY_UP)
-	{ 
-        players[i].action = ACTION_MOVE;
-        players[i].inputVertical = DIRECTION_UP;
-	}
-	else if (ks & PORT_A_KEY_DOWN)
-	{
-        players[i].action = ACTION_MOVE;
-        players[i].inputVertical = DIRECTION_DOWN;
-	}
+        // Read movement keys
+        if (ks & PORT_A_KEY_UP)
+        { 
+            players[i].action = ACTION_MOVE;
+            players[i].inputVertical = DIRECTION_UP;
+        }
+        else if (ks & PORT_A_KEY_DOWN)
+        {
+            players[i].action = ACTION_MOVE;
+            players[i].inputVertical = DIRECTION_DOWN;
+        }
 
-	if (ks & PORT_A_KEY_LEFT)
-	{
-        players[i].action = ACTION_MOVE;
-        players[i].inputHorizontal= DIRECTION_LEFT;
-	}
-	else if (ks & PORT_A_KEY_RIGHT)
-	{
-        players[i].action = ACTION_MOVE;
-        players[i].inputHorizontal = DIRECTION_RIGHT;
-	}
+        if (ks & PORT_A_KEY_LEFT)
+        {
+            players[i].action = ACTION_MOVE;
+            players[i].inputHorizontal= DIRECTION_LEFT;
+        }
+        else if (ks & PORT_A_KEY_RIGHT)
+        {
+            players[i].action = ACTION_MOVE;
+            players[i].inputHorizontal = DIRECTION_RIGHT;
+        }
+    }
+    else
+    {
+        // Reset action buttons
+        if (!(ks & PORT_B_KEY_1)) players[i].actionOnePressed = 0;
+        if (!(ks & PORT_B_KEY_2)) players[i].actionTwoPressed = 0;
+
+        // Start actions
+        if (players[i].actionOnePressed == 0 && (ks & PORT_B_KEY_1))
+        {
+            players[i].actionOnePressed = 1;
+            players[i].action = ACTION_ONE;
+            players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
+            return;
+        }
+        else if (players[i].actionTwoPressed == 0 && (ks & PORT_B_KEY_2))
+        {
+            players[i].actionTwoPressed = 1;
+            players[i].action = ACTION_TWO;
+            players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
+            return;
+        }
+
+        // Read movement keys
+        if (ks & PORT_B_KEY_UP)
+        { 
+            players[i].action = ACTION_MOVE;
+            players[i].inputVertical = DIRECTION_UP;
+        }
+        else if (ks & PORT_B_KEY_DOWN)
+        {
+            players[i].action = ACTION_MOVE;
+            players[i].inputVertical = DIRECTION_DOWN;
+        }
+
+        if (ks & PORT_B_KEY_LEFT)
+        {
+            players[i].action = ACTION_MOVE;
+            players[i].inputHorizontal= DIRECTION_LEFT;
+        }
+        else if (ks & PORT_B_KEY_RIGHT)
+        {
+            players[i].action = ACTION_MOVE;
+            players[i].inputHorizontal = DIRECTION_RIGHT;
+        }
+    }
 
     // Update player direction
     if(players[i].inputVertical == DIRECTION_UP)
@@ -338,9 +399,12 @@ void UpdatePlayer(char i)
         for(char i = 0; i < playersSprites[i].speed; ++i) MovePlayer(i);
     }
 
-    // Update total scroll
-    scrollXTotal += scrollXOffset;
-    scrollYTotal += scrollYOffset;
+     // Update total scroll
+    if(i == 0)
+    {
+        scrollXTotal += scrollXOffset;
+        scrollYTotal += scrollYOffset;
+    }
 }
 
 /*
@@ -504,7 +568,7 @@ void MoveUp(char i)
     {
         playersSprites[i].spriteY--;
     }
-    else
+    else if(i == 0)
     {
         scrollYOffset--;
     }
@@ -517,7 +581,7 @@ void MoveDown(char i)
     {
         playersSprites[i].spriteY++;
     }
-    else
+    else if(i == 0)
     {
         scrollYOffset++;
     }
@@ -530,7 +594,7 @@ void MoveLeft(char i)
     {
         playersSprites[i].spriteX--;
     }
-    else
+    else if(i == 0)
     {
         scrollXOffset--;
     }
@@ -543,37 +607,22 @@ void MoveRight(char i)
     {
         playersSprites[i].spriteX++;
     }
-    else
+    else if(i == 0)
     {
         scrollXOffset++;
     }
     playersSprites[i].positionX++;
 }
 
-void StartActionOne(char i)
-{
-    players[i].actionOnePressed = 1;
-	players[i].action = ACTION_ONE;
-    players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
-}
-
-void StartActionTwo(char i)
-{
-    players[i].actionTwoPressed = 1;
-	players[i].action = ACTION_TWO;
-    players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
-}
-
 void UpdateAction(char i)
 {
-    if(players[i].action == ACTION_ONE)
+    if(players[i].actionCount == PLAYER_ACTION_INTERACTION_FRAME)
     {
-        //SMS_setNextTileatXY(playerX/8, playerY/8);
-        //SMS_print("AAA!");
-    }
-    if(players[i].action == ACTION_TWO)
-    {
-        if (players[i].actionCount == PLAYER_ACTION_INTERACTION_FRAME)
+        if(players[i].action == ACTION_ONE)
+        {
+            //PSGSFXPlay(&explosion0_psg, 0);
+        }
+        else if(players[i].action == ACTION_TWO)
         {
             unsigned char *metatile;
 
@@ -600,14 +649,3 @@ void MetatileInteraction(unsigned char *metatile)
 		GSL_metatileUpdate();
 	}
 }
-
-
-
-
-
-
-
-
-
-
-

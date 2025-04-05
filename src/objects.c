@@ -14,7 +14,9 @@ struct SpriteObject
     unsigned int animationFrameData[8];
     unsigned char direction;
     unsigned char bank;
-    unsigned int romDataAddress;
+    unsigned int ramDataAddress;
+    char spriteOneIndex;
+    char spriteTwoIndex;
 };
 
 struct PlayerObject
@@ -27,7 +29,7 @@ struct PlayerObject
     unsigned char inputHorizontal;
 };
 
-void setSpriteAnimation(struct SpriteObject *spriteObject, const unsigned int data[])
+void setSpriteAnimation(struct SpriteObject *spriteObject, const unsigned int *data)
 {
     for(char i = 0; i < spriteObject->animationFrameDataCount; ++i)
     {

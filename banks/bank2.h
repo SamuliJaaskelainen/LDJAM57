@@ -4,18 +4,18 @@ extern const unsigned char	player_tiles_bin[6144];
 extern const unsigned char	ugtbatch_scrolltable_bin[4109];
 #define				ugtbatch_scrolltable_bin_size 4109
 #define				ugtbatch_scrolltable_bin_bank 2
-extern const unsigned char	font_tiles_bin[3072];
-#define				font_tiles_bin_size 3072
-#define				font_tiles_bin_bank 2
-extern const unsigned char	music_psg[1053];
-#define				music_psg_size 1053
-#define				music_psg_bank 2
+extern const unsigned char	soundtest_psg[3961];
+#define				soundtest_psg_size 3961
+#define				soundtest_psg_bank 2
 extern const unsigned char	ugtbatch_tiles_bin[480];
 #define				ugtbatch_tiles_bin_size 480
 #define				ugtbatch_tiles_bin_bank 2
 extern const unsigned char	ugtbatch_metatiles_bin[144];
 #define				ugtbatch_metatiles_bin_size 144
 #define				ugtbatch_metatiles_bin_bank 2
+extern const unsigned char	explosion0_psg[83];
+#define				explosion0_psg_size 83
+#define				explosion0_psg_bank 2
 extern const unsigned char	spritepalette_pal_bin[16];
 #define				spritepalette_pal_bin_size 16
 #define				spritepalette_pal_bin_bank 2
