@@ -5,38 +5,39 @@
 #include "..\banks\bank2.h"
 
 #include "resources.c"
+#include "objects.c"
 
-void RenderPlayer();
-void RenderPlayerUnsafe();
-void UpdatePlayer();
-void MovePlayerNoCollision();
-void MovePlayer();
-void MoveUp();
-void MoveDown();
-void MoveLeft();
-void MoveRight();
-void StartActionOne();
-void StartActionTwo();
-void UpdateAction();
+void RenderSprites();
+void RenderSpritesUnsafe();
+void UpdatePlayer(char i);
+void MovePlayerNoCollision(char i);
+void MovePlayer(char i);
+void MoveUp(char i);
+void MoveDown(char i);
+void MoveLeft(char i);
+void MoveRight(char i);
+void StartActionOne(char i);
+void StartActionTwo(char i);
+void UpdateAction(char i);
 void MetatileInteraction(unsigned char * metatile);
-char GetTopLeftMetatile();
-char GetTopRightMetatile();
-char GetBottomLeftMetatile();
-char GetBottomRightMetatile();
-char GetLowerLeftMetatile();
-char GetLowerRightMetatile();
-char GetLeftUpMetatile();
-char GetLeftDownMetatile();
-char GetRightUpMetatile();
-char GetRightDownMetatile();
-char IsPlayerUpBlocked();
-char IsPlayerDownBlocked();
-char IsPlayerLeftBlocked();
-char IsPlayerRightBlocked();
-char IsPlayerUpLeftBlocked();
-char IsPlayerUpRightBlocked();
-char IsPlayerDownLeftBlocked();
-char IsPlayerDownRightBlocked();
+char GetTopLeftMetatile(char i);
+char GetTopRightMetatile(char i);
+char GetBottomLeftMetatile(char i);
+char GetBottomRightMetatile(char i);
+char GetLowerLeftMetatile(char i);
+char GetLowerRightMetatile(char i);
+char GetLeftUpMetatile(char i);
+char GetLeftDownMetatile(char i);
+char GetRightUpMetatile(char i);
+char GetRightDownMetatile(char i);
+char IsPlayerUpBlocked(char i);
+char IsPlayerDownBlocked(char i);
+char IsPlayerLeftBlocked(char i);
+char IsPlayerRightBlocked(char i);
+char IsPlayerUpLeftBlocked(char i);
+char IsPlayerUpRightBlocked(char i);
+char IsPlayerDownLeftBlocked(char i);
+char IsPlayerDownRightBlocked(char i);
 
 #define DIRECTION_NONE  	    0
 #define DIRECTION_UP 			1
@@ -57,6 +58,7 @@ char IsPlayerDownRightBlocked();
 #define METATILE_TRIGGER_OFF 8
 #define METATILE_TRIGGER_ON 104
 
+#define PLAYER_COUNT            2
 #define PLAYER_START_X          904
 #define PLAYER_START_Y          928
 #define PLAYER_SPRITE_START_X   136
@@ -79,35 +81,20 @@ const char SCREEN_EDGE_Y       = 96;
 const char SCREEN_EDGE_X_INNER = 120;
 const char SCREEN_EDGE_X_OUTER = 136;
 
-unsigned int playerX = 0;
-unsigned int playerY = 0;
-unsigned char playerSpriteX = 0;
-unsigned char playerSpriteY = 0;
-
-unsigned char actionCount = 0;
-unsigned char action = 0;
-unsigned char actionOnePressed = 0;
-unsigned char actionTwoPressed = 0;
-
+// Only Player One scrolls
 unsigned char scrollXTotal = 0;
 unsigned char scrollYTotal = 0;
 unsigned char scrollXOffset = 0;
 unsigned char scrollYOffset = 0;
-unsigned char playerSpeed = 0;
-unsigned char playerDirection = 0;
-unsigned char playerDirectionVertical = 0;
-unsigned char playerDirectionHorizontal = 0;
-unsigned char playerAnimCounter = 0;
-unsigned char playerAnimFrame = 0;
 
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 
-// Player animations
-unsigned int playerAnim[4];
+struct PlayerObject players[PLAYER_COUNT];
+struct SpriteObject playersSprites[PLAYER_COUNT];
 
 // Header
 SMS_EMBED_SEGA_ROM_HEADER(999, 0);
-SMS_EMBED_SDSC_HEADER(1, 0, 2024, 9, 24, "Samuli", "SMSTest", "Test");
+SMS_EMBED_SDSC_HEADER(1, 0, 2024, 9, 24, "Samuli", "LDJAM57", "Love");
 
 void main(void)
 {
@@ -139,32 +126,47 @@ void main(void)
     PSGPlay(&music_psg);
 
     // Init player variables
-    action = ACTION_STATIONARY;
-    actionCount = 0;
-    actionOnePressed = 0;
-    actionTwoPressed = 0;
-    playerX = PLAYER_START_X;
-    playerY = PLAYER_START_Y;
-    playerSpriteX = PLAYER_SPRITE_START_X;
-    playerSpriteY = PLAYER_SPRITE_START_Y;
-    playerDirection = DIRECTION_DOWN;
-    playerDirectionVertical = DIRECTION_NONE;
-    playerDirectionHorizontal = DIRECTION_NONE;
-    for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimIdleUp[i];
+    for(char i = 0; i < PLAYER_COUNT; ++i)
+    {
+        playersSprites[i].positionX = PLAYER_START_X;
+        playersSprites[i].positionY = PLAYER_START_Y;
+        playersSprites[i].spriteX = PLAYER_SPRITE_START_X;
+        playersSprites[i].spriteY = PLAYER_SPRITE_START_Y;
+        playersSprites[i].isVisible = i == 0; // ONLY SHOW PLAYER ONE FOR NOW
+        playersSprites[i].size = 16;
+        playersSprites[i].speed = PLAYER_SPEED_DEFAULT;
+        playersSprites[i].animationFrameCounter = 0;
+        playersSprites[i].currentAnimationFrame = 0;
+        playersSprites[i].animationFrameDataCount = 4;
+        setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
+        playersSprites[i].direction = DIRECTION_DOWN;
+        playersSprites[i].bank = 2;
+        playersSprites[i].romDataAddress = 8192;
+
+        players[i].action = ACTION_STATIONARY;
+        players[i].actionCount = 0;
+        players[i].actionOnePressed = 0;
+        players[i].actionTwoPressed = 0;
+        players[i].inputVertical = DIRECTION_NONE;
+        players[i].inputHorizontal = DIRECTION_NONE;
+    }
 
     while(1)
     {
         // Player actions take n steps, 0 means new actions can be started
-        if (actionCount == 0) UpdatePlayer();
-        if (actionCount != 0) { actionCount--; UpdateAction(); }
+        for(char i = 0; i < PLAYER_COUNT; ++i)
+        {
+            if (players[i].actionCount == 0) UpdatePlayer(i);
+            if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
+        }
 
         // Render (be extra careful if reordering)
         GSL_scroll(scrollXOffset, scrollYOffset);
         SMS_waitForVBlank();
         UNSAFE_SMS_copySpritestoSAT();
         SMS_initSprites();
-        RenderPlayerUnsafe();
-        RenderPlayer();
+        RenderSpritesUnsafe();
+        RenderSprites();
         GSL_VBlank();
 
         // Play audio
@@ -172,152 +174,168 @@ void main(void)
     }
 }
 
-void RenderPlayer()
+void RenderSprites()
 {
-    // Add player sprites, tall mode is in use
-    SMS_addSprite(playerSpriteX + 248, playerSpriteY + 248, 0);
-    SMS_addSprite(playerSpriteX, playerSpriteY + 248, 2);
-
-    // Update animation frames
-    if(playerAnimCounter > PLAYER_ANIMATION_HOLD_DURATION)
+    for(char i = 0; i < PLAYER_COUNT; ++i)
     {
-        playerAnimCounter = 0;
-        playerAnimFrame++;
-        if(playerAnimFrame == PLAYER_ANIMATION_FRAME_COUNT) playerAnimFrame = 0;
-    }
-    playerAnimCounter++;
+        if(!playersSprites[i].isVisible) return;
 
-    // Update which animation to play
-    switch (playerDirection)
-    {
-        case DIRECTION_UP:
-            if(action == ACTION_MOVE) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimMoveUp[i];
-            else if(action == ACTION_ONE) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimOne[i];
-            else if(action == ACTION_TWO) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimTwo[i];
-            else for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimIdleUp[i];
-            break;
+        // Add player sprites, tall mode is in use
+        SMS_addSprite(playersSprites[i].spriteX + 248, playersSprites[i].spriteY + 248, 0);
+        SMS_addSprite(playersSprites[i].spriteX, playersSprites[i].spriteY + 248, 2);
 
-        case DIRECTION_DOWN:
-            if(action == ACTION_MOVE) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimMoveDown[i];
-            else if(action == ACTION_ONE) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimOne[i];
-            else if(action == ACTION_TWO) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimTwo[i];
-            else for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimIdleDown[i];
-            break;
+        // Update animation frames
+        if(playersSprites[i].animationFrameCounter > PLAYER_ANIMATION_HOLD_DURATION)
+        {
+            playersSprites[i].animationFrameCounter = 0;
+            playersSprites[i].currentAnimationFrame++;
+            if(playersSprites[i].currentAnimationFrame == playersSprites[i].animationFrameDataCount) playersSprites[i].currentAnimationFrame = 0;
+        }
+        playersSprites[i].animationFrameCounter++;
 
-        case DIRECTION_LEFT:
-        case DIRECTION_UP_LEFT:
-        case DIRECTION_DOWN_LEFT:
-            if(action == ACTION_MOVE) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimMoveLeft[i];
-            else if(action == ACTION_ONE) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimOne[i];
-            else if(action == ACTION_TWO) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimTwo[i];
-            else for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimIdleLeft[i];
-            break;
+        // Update which animation to play
+        switch (playersSprites[i].direction)
+        {
+            case DIRECTION_UP:
+                if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveUp);
+                else if(players[i].action == ACTION_ONE) for(char i = 0; i< 4; ++i) setSpriteAnimation(&playersSprites[i], playerAnimOne);
+                else if(players[i].action == ACTION_TWO) for(char i = 0; i< 4; ++i) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+                else setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
+                break;
 
-        case DIRECTION_RIGHT:
-        case DIRECTION_UP_RIGHT:
-        case DIRECTION_DOWN_RIGHT:
-            if(action == ACTION_MOVE) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimMoveRight[i];
-            else if(action == ACTION_ONE) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimOne[i];
-            else if(action == ACTION_TWO) for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimTwo[i];
-            else for(char i = 0; i< 4; ++i) playerAnim[i] = playerAnimIdleRight[i];
-            break;
+            case DIRECTION_DOWN:
+                if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveDown);
+                else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
+                else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+                else setSpriteAnimation(&playersSprites[i], playerAnimIdleDown);
+                break;
+
+            case DIRECTION_LEFT:
+            case DIRECTION_UP_LEFT:
+            case DIRECTION_DOWN_LEFT:
+                if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveLeft);
+                else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
+                else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+                else setSpriteAnimation(&playersSprites[i], playerAnimIdleLeft);
+                break;
+
+            case DIRECTION_RIGHT:
+            case DIRECTION_UP_RIGHT:
+            case DIRECTION_DOWN_RIGHT:
+                if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveRight);
+                else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
+                else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+                else setSpriteAnimation(&playersSprites[i], playerAnimIdleRight);
+                break;
+        }
     }
 }
 
-void RenderPlayerUnsafe()
+void RenderSpritesUnsafe()
 {
-    UNSAFE_SMS_VRAMmemcpy128(8192, &player_tiles_bin[playerAnim[playerAnimFrame]]);
+    for(char i = 0; i< PLAYER_COUNT; ++i)
+    {
+        if(!playersSprites[i].isVisible) return;
+
+        SMS_mapROMBank(playersSprites[i].bank);
+        UNSAFE_SMS_VRAMmemcpy128(playersSprites[i].romDataAddress, &player_tiles_bin[playersSprites[i].animationFrameData[playersSprites[i].currentAnimationFrame]]);
+    }
 }
 
-void UpdatePlayer()
+void UpdatePlayer(char i)
 {
 	// Reset movement values every frame
-	action = ACTION_STATIONARY;
-	scrollXOffset = 0;
-	scrollYOffset = 0;
-    playerDirectionVertical = DIRECTION_NONE;
-    playerDirectionHorizontal = DIRECTION_NONE;
+	players[i].action = ACTION_STATIONARY;
+    if(i == 0)
+    {
+        scrollXOffset = 0;
+        scrollYOffset = 0;
+    }
+    players[i].inputVertical = DIRECTION_NONE;
+    players[i].inputHorizontal = DIRECTION_NONE;
 
     // Read gamepad
     unsigned int ks = SMS_getKeysStatus();
 
+    // TODO READ PLAYER TWO KEYS
+
     // Reset action buttons
-    if (!(ks & PORT_A_KEY_1)) actionOnePressed = 0;
-    if (!(ks & PORT_A_KEY_2)) actionTwoPressed = 0;
+    if (!(ks & PORT_A_KEY_1)) players[i].actionOnePressed = 0;
+    if (!(ks & PORT_A_KEY_2)) players[i].actionTwoPressed = 0;
 
     // Start actions
-    if (actionOnePressed == 0 && (ks & PORT_A_KEY_1))
+    if (players[i].actionOnePressed == 0 && (ks & PORT_A_KEY_1))
 	{
-		StartActionOne();
+		StartActionOne(i);
 		return;
 	}
-	else if (actionTwoPressed == 0 && (ks & PORT_A_KEY_2))
+	else if (players[i].actionTwoPressed == 0 && (ks & PORT_A_KEY_2))
 	{
-		StartActionTwo();
+		StartActionTwo(i);
 		return;
 	}
 
     // Read movement keys
 	if (ks & PORT_A_KEY_UP)
 	{ 
-        action = ACTION_MOVE;
-        playerDirectionVertical = DIRECTION_UP;
+        players[i].action = ACTION_MOVE;
+        players[i].inputVertical = DIRECTION_UP;
 	}
 	else if (ks & PORT_A_KEY_DOWN)
 	{
-        action = ACTION_MOVE;
-        playerDirectionVertical = DIRECTION_DOWN;
+        players[i].action = ACTION_MOVE;
+        players[i].inputVertical = DIRECTION_DOWN;
 	}
 
 	if (ks & PORT_A_KEY_LEFT)
 	{
-        action = ACTION_MOVE;
-        playerDirectionHorizontal= DIRECTION_LEFT;
+        players[i].action = ACTION_MOVE;
+        players[i].inputHorizontal= DIRECTION_LEFT;
 	}
 	else if (ks & PORT_A_KEY_RIGHT)
 	{
-        action = ACTION_MOVE;
-        playerDirectionHorizontal = DIRECTION_RIGHT;
+        players[i].action = ACTION_MOVE;
+        players[i].inputHorizontal = DIRECTION_RIGHT;
 	}
 
     // Update player direction
-    if(playerDirectionVertical == DIRECTION_UP)
+    if(players[i].inputVertical == DIRECTION_UP)
     {
-        if(playerDirectionHorizontal == DIRECTION_LEFT) playerDirection = DIRECTION_UP_LEFT;
-        else if(playerDirectionHorizontal == DIRECTION_RIGHT) playerDirection = DIRECTION_UP_RIGHT;
-        else playerDirection = DIRECTION_UP;
+        if(players[i].inputHorizontal == DIRECTION_LEFT) playersSprites[i].direction = DIRECTION_UP_LEFT;
+        else if(players[i].inputHorizontal == DIRECTION_RIGHT) playersSprites[i].direction = DIRECTION_UP_RIGHT;
+        else playersSprites[i].direction = DIRECTION_UP;
     }
-    else if(playerDirectionVertical == DIRECTION_DOWN)
+    else if(players[i].inputVertical == DIRECTION_DOWN)
     {
-        if(playerDirectionHorizontal == DIRECTION_LEFT) playerDirection = DIRECTION_DOWN_LEFT;
-        else if(playerDirectionHorizontal == DIRECTION_RIGHT) playerDirection = DIRECTION_DOWN_RIGHT;
-        else playerDirection = DIRECTION_DOWN;
+        if(players[i].inputHorizontal == DIRECTION_LEFT) playersSprites[i].direction = DIRECTION_DOWN_LEFT;
+        else if(players[i].inputHorizontal == DIRECTION_RIGHT) playersSprites[i].direction = DIRECTION_DOWN_RIGHT;
+        else playersSprites[i].direction = DIRECTION_DOWN;
     }
     else
     {
-        if(playerDirectionHorizontal == DIRECTION_LEFT) playerDirection = DIRECTION_LEFT;
-        else if(playerDirectionHorizontal == DIRECTION_RIGHT) playerDirection = DIRECTION_RIGHT;
+        if(players[i].inputHorizontal == DIRECTION_LEFT) playersSprites[i].direction = DIRECTION_LEFT;
+        else if(players[i].inputHorizontal == DIRECTION_RIGHT) playersSprites[i].direction = DIRECTION_RIGHT;
     }
 
     // Update movement speed
-    if(action == ACTION_MOVE)
+    if(players[i].action == ACTION_MOVE)
     {
-        switch (playerDirection)
+        switch (playersSprites[i].direction)
         {
             case DIRECTION_UP_LEFT:
             case DIRECTION_DOWN_LEFT:
             case DIRECTION_UP_RIGHT:
             case DIRECTION_DOWN_RIGHT:
-                playerSpeed = PLAYER_SPEED_DIAGONAL;
+                playersSprites[i].speed = PLAYER_SPEED_DIAGONAL;
             break;
 
             default:
-                playerSpeed = PLAYER_SPEED_DEFAULT;
+                playersSprites[i].speed = PLAYER_SPEED_DEFAULT;
             break;
         }
 
         // Move player
-        for(char i = 0; i < playerSpeed; ++i) MovePlayerNoCollision(); //MovePlayer();
+        for(char i = 0; i < playersSprites[i].speed; ++i) MovePlayer(i);
     }
 
     // Update total scroll
@@ -345,231 +363,230 @@ XXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXX
 */
 
-char GetTopLeftMetatile() { return *(GSL_metatileLookup(playerX - 8, playerY - 1)); }
-char GetTopRightMetatile() { return *(GSL_metatileLookup(playerX + 7, playerY - 1)); }
-char GetBottomLeftMetatile() { return *(GSL_metatileLookup(playerX - 8, playerY + 8)); }
-char GetBottomRightMetatile() { return *(GSL_metatileLookup(playerX + 7, playerY + 8)); }
-char GetLowerLeftMetatile() { return *(GSL_metatileLookup(playerX - 9, playerY + 7)); }
-char GetLowerRightMetatile() { return *(GSL_metatileLookup(playerX + 8, playerY + 7)); }
-char GetLeftUpMetatile() { return *(GSL_metatileLookup(playerX - 9, playerY - 1)); }
-char GetLeftDownMetatile() { return *(GSL_metatileLookup(playerX - 9, playerY + 8)); }
-char GetRightUpMetatile() { return *(GSL_metatileLookup(playerX + 8, playerY - 1)); }
-char GetRightDownMetatile() { return *(GSL_metatileLookup(playerX + 8, playerY + 8)); }
+char GetTopLeftMetatile(char i)     { return *(GSL_metatileLookup(playersSprites[i].positionX - 8, playersSprites[i].positionY - 1)); }
+char GetTopRightMetatile(char i)    { return *(GSL_metatileLookup(playersSprites[i].positionX + 7, playersSprites[i].positionY - 1)); }
+char GetBottomLeftMetatile(char i)  { return *(GSL_metatileLookup(playersSprites[i].positionX - 8, playersSprites[i].positionY + 8)); }
+char GetBottomRightMetatile(char i) { return *(GSL_metatileLookup(playersSprites[i].positionX + 7, playersSprites[i].positionY + 8)); }
+char GetLowerLeftMetatile(char i)   { return *(GSL_metatileLookup(playersSprites[i].positionX - 9, playersSprites[i].positionY + 7)); }
+char GetLowerRightMetatile(char i)  { return *(GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY + 7)); }
+char GetLeftUpMetatile(char i)      { return *(GSL_metatileLookup(playersSprites[i].positionX - 9, playersSprites[i].positionY - 1)); }
+char GetLeftDownMetatile(char i)    { return *(GSL_metatileLookup(playersSprites[i].positionX - 9, playersSprites[i].positionY + 8)); }
+char GetRightUpMetatile(char i)     { return *(GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY - 1)); }
+char GetRightDownMetatile(char i)   { return *(GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY + 8)); }
+char IsPlayerUpBlocked(char i)          { return ((metatilesMetaLUT[GetTopLeftMetatile(i)] & 1) == PLAYER_COLLISION_VALUE || (metatilesMetaLUT[GetTopRightMetatile(i)] & 1) == PLAYER_COLLISION_VALUE); }
+char IsPlayerDownBlocked(char i)        { return (metatilesMetaLUT[GetBottomLeftMetatile(i)] & 1) == PLAYER_COLLISION_VALUE || (metatilesMetaLUT[GetBottomRightMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
+char IsPlayerLeftBlocked(char i)        { return (metatilesMetaLUT[GetLowerLeftMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
+char IsPlayerRightBlocked(char i)       { return (metatilesMetaLUT[GetLowerRightMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
+char IsPlayerUpLeftBlocked(char i)      { return (metatilesMetaLUT[GetLeftUpMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
+char IsPlayerUpRightBlocked(char i)     { return (metatilesMetaLUT[GetRightUpMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
+char IsPlayerDownLeftBlocked(char i)    { return (metatilesMetaLUT[GetLeftDownMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
+char IsPlayerDownRightBlocked(char i)   { return (metatilesMetaLUT[GetRightDownMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
 
-char IsPlayerUpBlocked() { return ((metatilesMetaLUT[GetTopLeftMetatile()] & 1) == PLAYER_COLLISION_VALUE || (metatilesMetaLUT[GetTopRightMetatile()] & 1) == PLAYER_COLLISION_VALUE); }
-char IsPlayerDownBlocked() { return (metatilesMetaLUT[GetBottomLeftMetatile()] & 1) == PLAYER_COLLISION_VALUE || (metatilesMetaLUT[GetBottomRightMetatile()] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerLeftBlocked() { return (metatilesMetaLUT[GetLowerLeftMetatile()] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerRightBlocked() { return (metatilesMetaLUT[GetLowerRightMetatile()] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerUpLeftBlocked() { return (metatilesMetaLUT[GetLeftUpMetatile()] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerUpRightBlocked() { return (metatilesMetaLUT[GetRightUpMetatile()] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerDownLeftBlocked() { return (metatilesMetaLUT[GetLeftDownMetatile()] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerDownRightBlocked() { return (metatilesMetaLUT[GetRightDownMetatile()] & 1) == PLAYER_COLLISION_VALUE; }
-
-void MovePlayerNoCollision()
+void MovePlayerNoCollision(char i)
 {
-    switch (playerDirection)
+    switch (playersSprites[i].direction)
     {
         case DIRECTION_UP:
-            MoveUp();
+            MoveUp(i);
         break;
 
         case DIRECTION_DOWN:
-            MoveDown();
+            MoveDown(i);
         break;
 
         case DIRECTION_LEFT:
-            MoveLeft();
+            MoveLeft(i);
         break;
 
         case DIRECTION_RIGHT:
-            MoveRight();
+            MoveRight(i);
         break;
 
         case DIRECTION_UP_LEFT:
-            MoveUp();
-            MoveLeft();
+            MoveUp(i);
+            MoveLeft(i);
         break;
 
         case DIRECTION_UP_RIGHT:
-            MoveUp();
-            MoveRight();
+            MoveUp(i);
+            MoveRight(i);
         break;
 
         case DIRECTION_DOWN_LEFT:
-            MoveDown();
-            MoveLeft();
+            MoveDown(i);
+            MoveLeft(i);
         break;
 
         case DIRECTION_DOWN_RIGHT:
-            MoveDown();
-            MoveRight();
+            MoveDown(i);
+            MoveRight(i);
         break;
     }
 }
 
-void MovePlayer()
+void MovePlayer(char i)
 {
-    switch (playerDirection)
+    switch (playersSprites[i].direction)
     {
         case DIRECTION_UP:
-         if (!IsPlayerUpBlocked()) MoveUp();
+            if (!IsPlayerUpBlocked(i)) MoveUp(i);
         break;
 
         case DIRECTION_DOWN:
-            if (!IsPlayerDownBlocked()) MoveDown();
+            if (!IsPlayerDownBlocked(i)) MoveDown(i);
         break;
 
         case DIRECTION_LEFT:
-            if (!IsPlayerLeftBlocked()) MoveLeft();
+            if (!IsPlayerLeftBlocked(i)) MoveLeft(i);
         break;
 
         case DIRECTION_RIGHT:
-            if (!IsPlayerRightBlocked()) MoveRight();
+            if (!IsPlayerRightBlocked(i)) MoveRight(i);
         break;
 
         case DIRECTION_UP_LEFT:
-            if (IsPlayerUpLeftBlocked())
+            if (IsPlayerUpLeftBlocked(i))
             {
-                if(!IsPlayerUpBlocked()) MoveUp();
-                else if(!IsPlayerLeftBlocked()) MoveLeft();
+                if(!IsPlayerUpBlocked(i)) MoveUp(i);
+                else if(!IsPlayerLeftBlocked(i)) MoveLeft(i);
             }
             else
             {
-                if(!IsPlayerUpBlocked()) MoveUp();
-                if(!IsPlayerLeftBlocked()) MoveLeft();
+                if(!IsPlayerUpBlocked(i)) MoveUp(i);
+                if(!IsPlayerLeftBlocked(i)) MoveLeft(i);
             }
         break;
 
         case DIRECTION_UP_RIGHT:
-            if (IsPlayerUpRightBlocked())
+            if (IsPlayerUpRightBlocked(i))
             {
-                if(!IsPlayerUpBlocked()) MoveUp();
-                else if(!IsPlayerRightBlocked()) MoveRight();
+                if(!IsPlayerUpBlocked(i)) MoveUp(i);
+                else if(!IsPlayerRightBlocked(i)) MoveRight(i);
             }
             else
             {
-                if(!IsPlayerUpBlocked()) MoveUp();
-                if(!IsPlayerRightBlocked()) MoveRight();
+                if(!IsPlayerUpBlocked(i)) MoveUp(i);
+                if(!IsPlayerRightBlocked(i)) MoveRight(i);
             }
         break;
 
         case DIRECTION_DOWN_LEFT:
-            if (IsPlayerDownLeftBlocked())
+            if (IsPlayerDownLeftBlocked(i))
             {
-                if(!IsPlayerDownBlocked()) MoveDown();
-                else if(!IsPlayerLeftBlocked()) MoveLeft();
+                if(!IsPlayerDownBlocked(i)) MoveDown(i);
+                else if(!IsPlayerLeftBlocked(i)) MoveLeft(i);
             }
             else
             {
-                if(!IsPlayerDownBlocked()) MoveDown();
-                if(!IsPlayerLeftBlocked()) MoveLeft();
+                if(!IsPlayerDownBlocked(i)) MoveDown(i);
+                if(!IsPlayerLeftBlocked(i)) MoveLeft(i);
             }
         break;
 
         case DIRECTION_DOWN_RIGHT:
-            if (IsPlayerDownRightBlocked())
+            if (IsPlayerDownRightBlocked(i))
             {
-                if(!IsPlayerDownBlocked()) MoveDown();
-                else if(!IsPlayerRightBlocked()) MoveRight();
+                if(!IsPlayerDownBlocked(i)) MoveDown(i);
+                else if(!IsPlayerRightBlocked(i)) MoveRight(i);
             }
             else
             {
-                if(!IsPlayerDownBlocked()) MoveDown();
-                if(!IsPlayerRightBlocked()) MoveRight();
+                if(!IsPlayerDownBlocked(i)) MoveDown(i);
+                if(!IsPlayerRightBlocked(i)) MoveRight(i);
             }
         break;
     }
 }
 
-void MoveUp()
+void MoveUp(char i)
 {
-    if (playerY <= SCREEN_EDGE_Y || playerY > GSL_getMapHeightInPixels() - SCREEN_EDGE_Y)
+    if (playersSprites[i].positionY <= SCREEN_EDGE_Y || playersSprites[i].positionY > GSL_getMapHeightInPixels() - SCREEN_EDGE_Y)
     {
-        playerSpriteY--;
+        playersSprites[i].spriteY--;
     }
     else
     {
         scrollYOffset--;
     }
-    playerY--;
+    playersSprites[i].positionY--;
 }
 
-void MoveDown()
+void MoveDown(char i)
 {
-    if (playerY < SCREEN_EDGE_Y || playerY >= GSL_getMapHeightInPixels() - SCREEN_EDGE_Y)
+    if (playersSprites[i].positionY < SCREEN_EDGE_Y || playersSprites[i].positionY >= GSL_getMapHeightInPixels() - SCREEN_EDGE_Y)
     {
-        playerSpriteY++;
+        playersSprites[i].spriteY++;
     }
     else
     {
         scrollYOffset++;
     }
-    playerY++;
+    playersSprites[i].positionY++;
 }
 
-void MoveLeft()
+void MoveLeft(char i)
 {
-    if (playerX <= SCREEN_EDGE_X_OUTER || playerX > GSL_getMapWidthInPixels() - SCREEN_EDGE_X_INNER)
+    if (playersSprites[i].positionX <= SCREEN_EDGE_X_OUTER || playersSprites[i].positionX > GSL_getMapWidthInPixels() - SCREEN_EDGE_X_INNER)
     {
-        playerSpriteX--;
+        playersSprites[i].spriteX--;
     }
     else
     {
         scrollXOffset--;
     }
-    playerX--;
+    playersSprites[i].positionX--;
 }
 
-void MoveRight()
+void MoveRight(char i)
 {
-    if (playerX < SCREEN_EDGE_X_OUTER || playerX >= GSL_getMapWidthInPixels() - SCREEN_EDGE_X_INNER)
+    if (playersSprites[i].positionX < SCREEN_EDGE_X_OUTER || playersSprites[i].positionX >= GSL_getMapWidthInPixels() - SCREEN_EDGE_X_INNER)
     {
-        playerSpriteX++;
+        playersSprites[i].spriteX++;
     }
     else
     {
         scrollXOffset++;
     }
-    playerX++;
+    playersSprites[i].positionX++;
 }
 
-void StartActionOne()
+void StartActionOne(char i)
 {
-    actionOnePressed = 1;
-	action = ACTION_ONE;
-    actionCount = PLAYER_ACTION_FRAME_COUNT;
+    players[i].actionOnePressed = 1;
+	players[i].action = ACTION_ONE;
+    players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
 }
 
-void StartActionTwo()
+void StartActionTwo(char i)
 {
-    actionTwoPressed = 1;
-	action = ACTION_TWO;
-    actionCount = PLAYER_ACTION_FRAME_COUNT;
+    players[i].actionTwoPressed = 1;
+	players[i].action = ACTION_TWO;
+    players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
 }
 
-void UpdateAction()
+void UpdateAction(char i)
 {
-    if(action == ACTION_ONE)
+    if(players[i].action == ACTION_ONE)
     {
         //SMS_setNextTileatXY(playerX/8, playerY/8);
         //SMS_print("AAA!");
     }
-    if(action == ACTION_TWO)
+    if(players[i].action == ACTION_TWO)
     {
-        if (actionCount == PLAYER_ACTION_INTERACTION_FRAME)
+        if (players[i].actionCount == PLAYER_ACTION_INTERACTION_FRAME)
         {
             unsigned char *metatile;
 
-            if (playerDirection == DIRECTION_UP) metatile = GSL_metatileLookup(playerX - 8, playerY - 1);
-            else if (playerDirection == DIRECTION_DOWN) metatile = GSL_metatileLookup(playerX - 8, playerY + 8);
-            else if (playerDirection == DIRECTION_LEFT || playerDirection == DIRECTION_UP_LEFT || playerDirection == DIRECTION_DOWN_LEFT) metatile = GSL_metatileLookup(playerX - 9, playerY - 8);
-            else metatile = GSL_metatileLookup(playerX + 8, playerY - 8);
+            if (playersSprites[i].direction == DIRECTION_UP) metatile = GSL_metatileLookup(playersSprites[i].positionX - 8, playersSprites[i].positionY - 1);
+            else if (playersSprites[i].direction == DIRECTION_DOWN) metatile = GSL_metatileLookup(playersSprites[i].positionX - 8, playersSprites[i].positionY + 8);
+            else if (playersSprites[i].direction == DIRECTION_LEFT || playersSprites[i].direction == DIRECTION_UP_LEFT || playersSprites[i].direction == DIRECTION_DOWN_LEFT) metatile = GSL_metatileLookup(playersSprites[i].positionX - 9, playersSprites[i].positionY - 8);
+            else metatile = GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY - 8);
             MetatileInteraction(metatile);
 
-            if (playerDirection == DIRECTION_UP) metatile = GSL_metatileLookup(playerX + 7, playerY - 1);
-            else if (playerDirection == DIRECTION_DOWN) metatile = GSL_metatileLookup(playerX + 7, playerY + 8);
-            else if (playerDirection == DIRECTION_LEFT || playerDirection == DIRECTION_UP_LEFT || playerDirection == DIRECTION_DOWN_LEFT) metatile = GSL_metatileLookup(playerX - 9, playerY + 7);
-            else metatile = GSL_metatileLookup(playerX + 8, playerY + 7);
+            if (playersSprites[i].direction == DIRECTION_UP) metatile = GSL_metatileLookup(playersSprites[i].positionX + 7, playersSprites[i].positionY - 1);
+            else if (playersSprites[i].direction == DIRECTION_DOWN) metatile = GSL_metatileLookup(playersSprites[i].positionX + 7, playersSprites[i].positionY + 8);
+            else if (playersSprites[i].direction == DIRECTION_LEFT || playersSprites[i].direction == DIRECTION_UP_LEFT || playersSprites[i].direction == DIRECTION_DOWN_LEFT) metatile = GSL_metatileLookup(playersSprites[i].positionX - 9, playersSprites[i].positionY + 7);
+            else metatile = GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY + 7);
             MetatileInteraction(metatile);
         }
     }
