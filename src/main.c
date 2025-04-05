@@ -3,11 +3,12 @@
 #include "..\lib\GSLib.h"
 
 #include "..\banks\bank2.h"
-//#include "..\banks\bank3.h"
+#include "..\banks\bank3.h"
 
 #include "resources.c"
 #include "objects.c"
 
+// Player Logic
 void UpdatePlayerAnimations(char i);
 void UpdatePlayer(char i);
 void MovePlayerNoCollision(char i);
@@ -17,6 +18,19 @@ void MoveDown(char i);
 void MoveLeft(char i);
 void MoveRight(char i);
 void UpdateAction(char i);
+
+// Player blocking
+char IsPlayerUpBlocked(char i);
+char IsPlayerDownBlocked(char i);
+char IsPlayerLeftBlocked(char i);
+char IsPlayerRightBlocked(char i);
+char IsPlayerUpLeftBlocked(char i);
+char IsPlayerUpRightBlocked(char i);
+char IsPlayerDownLeftBlocked(char i);
+char IsPlayerDownRightBlocked(char i);
+
+
+// Metatiles
 void MetatileInteraction(unsigned char * metatile);
 char GetTopLeftMetatile(char i);
 char GetTopRightMetatile(char i);
@@ -28,14 +42,8 @@ char GetLeftUpMetatile(char i);
 char GetLeftDownMetatile(char i);
 char GetRightUpMetatile(char i);
 char GetRightDownMetatile(char i);
-char IsPlayerUpBlocked(char i);
-char IsPlayerDownBlocked(char i);
-char IsPlayerLeftBlocked(char i);
-char IsPlayerRightBlocked(char i);
-char IsPlayerUpLeftBlocked(char i);
-char IsPlayerUpRightBlocked(char i);
-char IsPlayerDownLeftBlocked(char i);
-char IsPlayerDownRightBlocked(char i);
+
+// Bullet Behavior
 void ShootBullet(char i);
 void UpdateBullets(char i);
 void MoveBulletUp(char i, char j);
@@ -43,8 +51,20 @@ void MoveBulletDown(char i, char j);
 void MoveBulletLeft(char i, char j);
 void MoveBulletRight(char i, char j);
 
+// Title and End Screen
+void LoadTitleScreen(void);
+void LoadEndScreen(void);
+void HandleTitleScreen(void);
+void HandleGameScreen(void);
+void HandleEndScreen(void);
+
+// Sprite Rendering
 void RenderSprites(void);
 void RenderSpritesUnsafe(void);
+
+// Music and SFX handling 
+void LoadMusic(void);
+void LoadSFX(void);
 
 #define DIRECTION_NONE  	    0
 #define DIRECTION_UP 			1
@@ -77,15 +97,20 @@ void RenderSpritesUnsafe(void);
 #define PLAYER_COLLISION_VALUE  	    1
 #define PLAYER_ANIMATION_HOLD_DURATION  4
 
+// Screenspace defines
 #define SCREEN_WIDTH            256
 #define SCREEN_HEIGHT           192
 #define FONT_VRAM_OFFSET        320
 #define START_WOLRD_OFFSET_X    768
 #define START_WOLRD_OFFSET_Y    832
 
+// Game states
 #define GAME_STATE_TITLE    0
 #define GAME_STATE_GAME     1
 #define GAME_STATE_END      2
+
+// Game settings
+#define MAX_FACTORY_NUM 5
 
 const unsigned char PLAYER_SPEED_DEFAULT =  2;
 const unsigned char PLAYER_SPEED_DIAGONAL = 1;
@@ -109,7 +134,7 @@ unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 
 // Gamestate and counters
 unsigned char gameState = GAME_STATE_GAME;
-unsigned char numFactories = 5; // when this reaches 0, game is won
+unsigned char numFactories = MAX_FACTORY_NUM; // when this reaches 0, game is won
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
@@ -120,33 +145,149 @@ SMS_EMBED_SDSC_HEADER(1, 0, 2024, 9, 24, "Samuli", "LDJAM57", "Love");
 
 void main(void)
 {
-    // Setup VDP
-    SMS_displayOff();
-    SMS_useFirstHalfTilesforSprites(0);
-    SMS_VDPturnOnFeature(VDPFEATURE_HIDEFIRSTCOL);
-    SMS_setSpriteMode(SPRITEMODE_TALL);
-    SMS_VRAMmemsetW(0, 0, 0);
-    SMS_mapROMBank(2);
-	SMS_loadBGPalette(&ugtbatch_palette_bin);
-	SMS_loadSpritePalette(&spritepalette_pal_bin);
-    SMS_loadTiles(&ugtbatch_tiles_bin, 0, ugtbatch_tiles_bin_size);
-    SMS_loadTiles(&pollen_tiles_bin, 264, pollen_tiles_bin_size);
-    SMS_displayOn();
+    // Set initial game state to title
+    gameState = GAME_STATE_TITLE;
 
-    // Setup scrolltable
-    for (int i = 0; i < ugtbatch_scrolltable_bin_size; i++) scrolltable[i] = *(ugtbatch_scrolltable_bin + i);
+    // Load the title screen first
+    LoadTitleScreen();
 
-    // Setup GSL
-    GSL_initializeMap(&scrolltable, &ugtbatch_metatiles_bin);
-    GSL_positionWindow(START_WOLRD_OFFSET_X, START_WOLRD_OFFSET_Y);
-    scrollXTotal = START_WOLRD_OFFSET_X;
-    scrollYTotal = START_WOLRD_OFFSET_Y;
-    GSL_refreshVDP();
+ while(1) {
+        // Read gamepad
+        keyStatus = SMS_getKeysStatus();
+        
+        // Handle current game state
+        switch (gameState) {
+            case GAME_STATE_TITLE:
+                // Simple rendering for title screen - no scrolling needed
+                SMS_waitForVBlank();
+                SMS_copySpritestoSAT();
+                HandleTitleScreen();
+                break;
+                
+            case GAME_STATE_GAME:
+                HandleGameScreen();
+                // // Game-specific rendering
+                GSL_scroll(scrollXThisFrame, scrollYThisFrame);
+                SMS_waitForVBlank();
+                UNSAFE_SMS_copySpritestoSAT();
+                SMS_initSprites();
+                RenderSpritesUnsafe();
+                RenderSprites();
+                GSL_VBlank();
 
-    // Init audio & play music
+                break;
+                
+            case GAME_STATE_END:
+                HandleEndScreen();
+                
+                // Simple rendering for end screen - no scrolling needed
+                SMS_waitForVBlank();
+                SMS_copySpritestoSAT();
+                break;
+        }
+        
+        // Play audio
+        PSGFrame();
+    }
+}
+
+void LoadMusic(void) 
+{
+    // switch to bank that has music
+    SMS_mapROMBank(kaijulove_psg_bank);
     PSGPlay(&kaijulove_psg);
 
-    // Init player variables
+}
+
+// title and end screen handling
+void LoadTitleScreen(void) {
+    // Clear the screen and load title graphics
+    SMS_displayOff();
+    SMS_VRAMmemsetW(0, 0, 0x4000); // Clear VRAM
+    
+    // Load the title screen tiles and data
+    SMS_mapROMBank(startendpalette_pal_bin_bank);
+    SMS_loadBGPalette(&startendpalette_pal_bin);
+    SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
+    SMS_loadTileMap(0,0,&start_map_bin, start_map_bin_size);
+    
+    // No need for scrolling in title screen
+    // SMS_setLineInterruptHandler(0);
+    // SMS_setLineCounter(0);
+    // SMS_enableLineInterrupt();
+    
+    // Reset scroll position
+    SMS_setBGScrollX(0);
+    SMS_setBGScrollY(0);
+    
+    SMS_displayOn();
+}
+
+void LoadEndScreen(void) {
+    // Clear the screen and load end screen graphics
+    SMS_displayOff();
+    SMS_VRAMmemsetW(0, 0, 0x4000); // Clear VRAM
+    
+    // Load the end screen tiles and data
+    SMS_mapROMBank(startendpalette_pal_bin_bank);
+    SMS_loadBGPalette(&startendpalette_pal_bin);
+    SMS_loadTiles(&end_tiles_bin, 0, end_tiles_bin_size);
+    SMS_loadTileMap(0,0,&end_map_bin, end_map_bin_size);
+    
+    // No need for scrolling in end screen
+    // SMS_setLineInterruptHandler(0);
+    // SMS_setLineCounter(0);
+    // SMS_enableLineInterrupt();
+    
+    // Reset scroll position
+    SMS_setBGScrollX(0);
+    SMS_setBGScrollY(0);
+    
+    SMS_displayOn();
+}
+
+void HandleTitleScreen(void) {
+    // Check for player one action button to start game
+    if (keyStatus & PORT_A_KEY_1) {
+        gameState = GAME_STATE_GAME;
+        
+        // Reset game state here
+        // Initialize player positions, etc.
+        
+        // Initialize the player variables
+        // Init player variables
+
+        // Setup VDP
+        SMS_displayOff();
+        //SMS_VRAMmemsetW(0, 0, 0x4000); // Clear VRAM
+        SMS_useFirstHalfTilesforSprites(0);
+        SMS_VDPturnOnFeature(VDPFEATURE_HIDEFIRSTCOL);
+        SMS_setSpriteMode(SPRITEMODE_TALL);
+        SMS_VRAMmemsetW(0, 0, 0);
+        SMS_mapROMBank(ugtbatch_palette_bin_bank);
+        SMS_loadBGPalette(&ugtbatch_palette_bin);
+        SMS_mapROMBank(spritepalette_pal_bin_bank);
+        SMS_loadSpritePalette(&spritepalette_pal_bin);
+        SMS_mapROMBank(ugtbatch_tiles_bin_bank);
+        SMS_loadTiles(&ugtbatch_tiles_bin, 0, ugtbatch_tiles_bin_size);
+        SMS_mapROMBank(pollen_tiles_bin_bank);
+        SMS_loadTiles(&pollen_tiles_bin, 264, pollen_tiles_bin_size);
+        SMS_displayOn();
+
+        // Setup scrolltable
+        SMS_mapROMBank(ugtbatch_scrolltable_bin_bank);
+        for (int i = 0; i < ugtbatch_scrolltable_bin_size; i++) scrolltable[i] = *(ugtbatch_scrolltable_bin + i);
+
+        // Setup GSL
+        SMS_mapROMBank(ugtbatch_metatiles_bin_bank);
+        GSL_initializeMap(&scrolltable, &ugtbatch_metatiles_bin);
+        GSL_positionWindow(START_WOLRD_OFFSET_X, START_WOLRD_OFFSET_Y);
+        scrollXTotal = START_WOLRD_OFFSET_X;
+        scrollYTotal = START_WOLRD_OFFSET_Y;
+        GSL_refreshVDP();
+
+        // Init audio & play music
+        LoadMusic();
     for(char i = 0; i < PLAYER_COUNT; ++i)
     {
         playersSprites[i].positionX = PLAYER_START_X;
@@ -184,38 +325,36 @@ void main(void)
             players[i].bullets[j].spriteTwoIndex = 10;
         }
     }
-
-    while(1)
-    {
-        // Read gamepad
-        keyStatus = SMS_getKeysStatus();
-
-        // Only process player actions if the game is in the playing state
-        if (gameState == GAME_STATE_GAME)
-        {
-            // Player actions take n steps, 0 means new actions can be started
-            for(char i = 0; i < PLAYER_COUNT; ++i)
-            {
-                if (players[i].actionCount == 0) UpdatePlayer(i);
-                if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
-                UpdatePlayerAnimations(i);
-                UpdateBullets(i);
-            }
-        }
-
-        // Render (be extra careful if reordering)
-        GSL_scroll(scrollXThisFrame, scrollYThisFrame);
-        SMS_waitForVBlank();
-        UNSAFE_SMS_copySpritestoSAT();
-        SMS_initSprites();
-        RenderSpritesUnsafe();
-        RenderSprites();
-        GSL_VBlank();
-
-        // Play audio
-        PSGFrame();
+        
+        
+        // Reset game progress variables
+        numFactories = MAX_FACTORY_NUM;
+        playerTwoJoined = 0;
+        
     }
 }
+
+void HandleEndScreen(void) {
+    // Check for button press to return to title
+    if (keyStatus & PORT_A_KEY_1) {
+        gameState = GAME_STATE_TITLE;
+        LoadTitleScreen();
+    }
+}
+
+void HandleGameScreen(void) {
+    // Shoot take n steps, 0 means new actions can be started
+    for(char i = 0; i < PLAYER_COUNT; ++i) {
+        if (players[i].actionCount == 0) UpdatePlayer(i);
+        if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
+        UpdatePlayerAnimations(i);
+        UpdateBullets(i);
+    }
+    
+    // rest of game-specific rendering handled in main loop
+}
+
+
 
 void RenderSprites(void)
 {
@@ -244,6 +383,7 @@ void RenderSpritesUnsafe(void)
     for(char i = 0; i< PLAYER_COUNT; ++i)
     {
         if(!playersSprites[i].isVisible) return;
+        SMS_mapROMBank(player_tiles_bin_bank);
         UNSAFE_SMS_VRAMmemcpy128(players[i].ramDataAddress, &player_tiles_bin[playersSprites[i].animationFrameData[playersSprites[i].currentAnimationFrame]]);
     }
 }
@@ -759,6 +899,7 @@ void UpdateAction(char i)
     }
 }
 
+// Modify your MetatileInteraction function to load the end screen
 void MetatileInteraction(unsigned char *metatile)
 {
     if (*metatile == METATILE_TRIGGER_ON)
@@ -776,6 +917,10 @@ void MetatileInteraction(unsigned char *metatile)
         if (numFactories == 0)
         {
             gameState = GAME_STATE_END;
+            LoadEndScreen();  // Load the end screen when game is won
+            
+            // TODO end screen song
+            // PSGPlay(&end_psg);
         }
     }
 }
