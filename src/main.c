@@ -62,8 +62,8 @@ void RenderSprites(void);
 void RenderSpritesUnsafe(void);
 
 // Music and SFX handling 
-void LoadMusic(void);
-void LoadSFX(void);
+void LoadAndPlayMusic(void);
+void StopMusic(void);
 
 #define DIRECTION_NONE  	    0
 #define DIRECTION_UP 			1
@@ -145,9 +145,6 @@ SMS_EMBED_SDSC_HEADER(1, 0, 2024, 9, 24, "Samuli", "LDJAM57", "Love");
 
 void main(void)
 {
-    // Init audio & play music
-    //LoadMusic();
-
     // Load the title screen first
     LoadTitleScreen();
 
@@ -168,6 +165,7 @@ void main(void)
                 
             case GAME_STATE_GAME:
                 HandleGameScreen();
+                if(gameState == GAME_STATE_END) break;
                 // Game-specific rendering
                 GSL_scroll(scrollXThisFrame, scrollYThisFrame);
                 SMS_waitForVBlank();
@@ -191,16 +189,23 @@ void main(void)
     }
 }
 
-void LoadMusic(void) 
+void LoadAndPlayMusic(void) 
 {
     // switch to bank that has music
     SMS_mapROMBank(kaijulove_psg_bank);
     PSGPlay(&kaijulove_psg);
 }
 
+void StopMusic(void)
+{
+    PSGStop();
+}
+
 // title and end screen handling
 void LoadTitleScreen(void)
 {
+    StopMusic();
+
     gameState = GAME_STATE_TITLE;
 
     // Clear the screen and load title graphics
@@ -213,11 +218,6 @@ void LoadTitleScreen(void)
     SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
     SMS_loadTileMap(0,0,&start_map_bin, start_map_bin_size);
     
-    // No need for scrolling in title screen
-    // SMS_setLineInterruptHandler(0);
-    // SMS_setLineCounter(0);
-    // SMS_enableLineInterrupt();
-    
     // Reset scroll position
     SMS_setBGScrollX(0);
     SMS_setBGScrollY(0);
@@ -227,6 +227,8 @@ void LoadTitleScreen(void)
 
 void LoadEndScreen(void)
 {
+    StopMusic();
+
     gameState = GAME_STATE_END;
 
     // Clear the screen and load end screen graphics
@@ -239,11 +241,6 @@ void LoadEndScreen(void)
     SMS_loadTiles(&end_tiles_bin, 0, end_tiles_bin_size);
     SMS_loadTileMap(0,0,&end_map_bin, end_map_bin_size);
     
-    // No need for scrolling in end screen
-    // SMS_setLineInterruptHandler(0);
-    // SMS_setLineCounter(0);
-    // SMS_enableLineInterrupt();
-    
     // Reset scroll position
     SMS_setBGScrollX(0);
     SMS_setBGScrollY(0);
@@ -253,6 +250,8 @@ void LoadEndScreen(void)
 
 void HandleTitleScreen(void)
 {
+    // TODO: Prevent holding key 1 for direct skipping after end screen
+
     // Check for player one action button to start game
     if (keyStatus & PORT_A_KEY_1)
     {
@@ -285,6 +284,9 @@ void HandleTitleScreen(void)
         scrollXTotal = START_WOLRD_OFFSET_X;
         scrollYTotal = START_WOLRD_OFFSET_Y;
         GSL_refreshVDP();
+
+        // Init audio & play music
+        LoadAndPlayMusic();
 
         // Init players
         for(char i = 0; i < PLAYER_COUNT; ++i)
