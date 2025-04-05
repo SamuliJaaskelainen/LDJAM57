@@ -165,6 +165,9 @@ void main(void)
 
     while(1)
     {
+        // Read gamepad
+        keyStatus = SMS_getKeysStatus();
+
         // Only process player actions if the game is in the playing state
         if (gameState == GAME_STATE_GAME)
         {
@@ -738,7 +741,7 @@ void MetatileInteraction(unsigned char *metatile)
         numFactories--;
         if (numFactories == 0)
         {
-            gameState = 2; // Set game state to "won" (paused)
+            gameState = GAME_STATE_END;
         }
     }
 }

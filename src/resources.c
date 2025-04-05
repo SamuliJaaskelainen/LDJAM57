@@ -270,5 +270,4 @@ const unsigned char metatilesMetaLUT[] =
 	0x00,	//253
 	0x00,	//254
 	0x00	//255
-
 };
