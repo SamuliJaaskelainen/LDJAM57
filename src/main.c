@@ -152,7 +152,7 @@ void main(void)
         players[i].inputHorizontal = DIRECTION_NONE;
     }
 
-    while(gamePlaying)
+    while(1)
     {
         // Player actions take n steps, 0 means new actions can be started
         for(char i = 0; i < PLAYER_COUNT; ++i)
