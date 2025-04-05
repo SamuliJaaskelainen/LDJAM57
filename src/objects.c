@@ -23,8 +23,7 @@ struct PlayerObject
     unsigned int ramDataAddress;
     unsigned char action;
     unsigned char actionCount;
-    unsigned char actionOnePressed;
-    unsigned char actionTwoPressed;
+    unsigned char actionOnePressed; // Action one cannot be hold, this variable is for checking presses
     unsigned char inputVertical;
     unsigned char inputHorizontal;
     struct SpriteObject bullets[PLAYER_BULLET_COUNT];

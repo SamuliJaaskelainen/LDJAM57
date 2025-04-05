@@ -72,8 +72,8 @@ void RenderSpritesUnsafe(void);
 #define PLAYER_START_Y          928
 #define PLAYER_SPRITE_START_X   136
 #define PLAYER_SPRITE_START_Y   96
-#define PLAYER_ACTION_FRAME_COUNT       9
-#define PLAYER_ACTION_INTERACTION_FRAME 5
+#define PLAYER_ACTION_FRAME_COUNT       15
+#define PLAYER_ACTION_INTERACTION_FRAME 14
 #define PLAYER_COLLISION_VALUE  	    1
 #define PLAYER_ANIMATION_HOLD_DURATION  4
 
@@ -89,6 +89,8 @@ void RenderSpritesUnsafe(void);
 
 const unsigned char PLAYER_SPEED_DEFAULT =  2;
 const unsigned char PLAYER_SPEED_DIAGONAL = 1;
+const unsigned char PLAYER_BULLET_SPEED_DEFAULT =  4;
+const unsigned char PLAYER_BULLET_SPEED_DIAGONAL = 2;
 
 const unsigned char SCREEN_EDGE_Y       = 96;
 const unsigned char SCREEN_EDGE_X_INNER = 120;
@@ -122,7 +124,7 @@ void main(void)
     SMS_displayOff();
     SMS_useFirstHalfTilesforSprites(0);
     SMS_VDPturnOnFeature(VDPFEATURE_HIDEFIRSTCOL);
-    SMS_setSpriteMode (SPRITEMODE_TALL);
+    SMS_setSpriteMode(SPRITEMODE_TALL);
     SMS_VRAMmemsetW(0, 0, 0);
     SMS_mapROMBank(2);
 	SMS_loadBGPalette(&ugtbatch_palette_bin);
@@ -165,7 +167,6 @@ void main(void)
         players[i].action = ACTION_STATIONARY;
         players[i].actionCount = 0;
         players[i].actionOnePressed = 0;
-        players[i].actionTwoPressed = 0;
         players[i].inputVertical = DIRECTION_NONE;
         players[i].inputHorizontal = DIRECTION_NONE;
 
@@ -223,16 +224,16 @@ void RenderSprites(void)
         if(!playersSprites[i].isVisible) continue;
 
         // Add player sprites, tall mode is in use 248
-        SMS_addSprite(playersSprites[i].spriteX + 248, playersSprites[i].spriteY + 248, playersSprites[i].spriteOneIndex);
-        SMS_addSprite(playersSprites[i].spriteX, playersSprites[i].spriteY + 248, playersSprites[i].spriteTwoIndex);
+        SMS_addSprite(playersSprites[i].spriteX - 8, playersSprites[i].spriteY - 8, playersSprites[i].spriteOneIndex);
+        SMS_addSprite(playersSprites[i].spriteX, playersSprites[i].spriteY - 8, playersSprites[i].spriteTwoIndex);
 
         // Render player bullets
         for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
         {
             if(players[i].bullets[j].isVisible)
             {
-                SMS_addSprite(players[i].bullets[j].spriteX, players[i].bullets[j].spriteY, players[i].bullets[j].spriteOneIndex);
-                SMS_addSprite(players[i].bullets[j].spriteX + 8, players[i].bullets[j].spriteY, players[i].bullets[j].spriteTwoIndex);
+                SMS_addSprite(players[i].bullets[j].spriteX - 8, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteOneIndex);
+                SMS_addSprite(players[i].bullets[j].spriteX, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteTwoIndex);
             }
         }
     }
@@ -328,14 +329,13 @@ void UpdatePlayer(char i)
             playersSprites[1].spriteX = playersSprites[0].spriteX;
             playersSprites[1].spriteY = playersSprites[0].spriteY;
         }
-        //return;
+        //return; TODO: Enable this later
     }
 
     if(i == PLAYER_ONE)
     {
-        // Reset action buttons
+        // Reset roar button
         if (!(keyStatus & PORT_A_KEY_1)) players[i].actionOnePressed = 0;
-        if (!(keyStatus & PORT_A_KEY_2)) players[i].actionTwoPressed = 0;
 
         // Start actions
         if (players[i].actionOnePressed == 0 && (keyStatus & PORT_A_KEY_1))
@@ -345,9 +345,8 @@ void UpdatePlayer(char i)
             players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
             return;
         }
-        else if (players[i].actionTwoPressed == 0 && (keyStatus & PORT_A_KEY_2))
+        else if (keyStatus & PORT_A_KEY_2)
         {
-            players[i].actionTwoPressed = 1;
             players[i].action = ACTION_TWO;
             players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
             return;
@@ -378,9 +377,8 @@ void UpdatePlayer(char i)
     }
     else // Player Two
     {
-        // Reset action buttons
+        // Reset roar button
         if (!(keyStatus & PORT_B_KEY_1)) players[i].actionOnePressed = 0;
-        if (!(keyStatus & PORT_B_KEY_2)) players[i].actionTwoPressed = 0;
 
         // Start actions
         if (players[i].actionOnePressed == 0 && (keyStatus & PORT_B_KEY_1))
@@ -390,9 +388,8 @@ void UpdatePlayer(char i)
             players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
             return;
         }
-        else if (players[i].actionTwoPressed == 0 && (keyStatus & PORT_B_KEY_2))
+        else if (keyStatus & PORT_B_KEY_2)
         {
-            players[i].actionTwoPressed = 1;
             players[i].action = ACTION_TWO;
             players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
             return;
@@ -493,14 +490,14 @@ char GetLeftUpMetatile(char i)      { return *(GSL_metatileLookup(playersSprites
 char GetLeftDownMetatile(char i)    { return *(GSL_metatileLookup(playersSprites[i].positionX - 9, playersSprites[i].positionY + 8)); }
 char GetRightUpMetatile(char i)     { return *(GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY - 1)); }
 char GetRightDownMetatile(char i)   { return *(GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY + 8)); }
-char IsPlayerUpBlocked(char i)          { return ((metatilesMetaLUT[GetTopLeftMetatile(i)] & 1) == PLAYER_COLLISION_VALUE || (metatilesMetaLUT[GetTopRightMetatile(i)] & 1) == PLAYER_COLLISION_VALUE); }
-char IsPlayerDownBlocked(char i)        { return (metatilesMetaLUT[GetBottomLeftMetatile(i)] & 1) == PLAYER_COLLISION_VALUE || (metatilesMetaLUT[GetBottomRightMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerLeftBlocked(char i)        { return (metatilesMetaLUT[GetLowerLeftMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerRightBlocked(char i)       { return (metatilesMetaLUT[GetLowerRightMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerUpLeftBlocked(char i)      { return (metatilesMetaLUT[GetLeftUpMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerUpRightBlocked(char i)     { return (metatilesMetaLUT[GetRightUpMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerDownLeftBlocked(char i)    { return (metatilesMetaLUT[GetLeftDownMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
-char IsPlayerDownRightBlocked(char i)   { return (metatilesMetaLUT[GetRightDownMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
+char IsPlayerUpBlocked(char i)          { return ((metatilesMetaLUT[GetTopLeftMetatile(i)] & PLAYER_COLLISION_VALUE) == 1 || (metatilesMetaLUT[GetTopRightMetatile(i)] & PLAYER_COLLISION_VALUE) == 1); }
+char IsPlayerDownBlocked(char i)        { return (metatilesMetaLUT[GetBottomLeftMetatile(i)] & PLAYER_COLLISION_VALUE) == 1 || (metatilesMetaLUT[GetBottomRightMetatile(i)] & PLAYER_COLLISION_VALUE) == 1; }
+char IsPlayerLeftBlocked(char i)        { return (metatilesMetaLUT[GetLowerLeftMetatile(i)] & PLAYER_COLLISION_VALUE) == 1; }
+char IsPlayerRightBlocked(char i)       { return (metatilesMetaLUT[GetLowerRightMetatile(i)] & PLAYER_COLLISION_VALUE) == 1; }
+char IsPlayerUpLeftBlocked(char i)      { return (metatilesMetaLUT[GetLeftUpMetatile(i)] & PLAYER_COLLISION_VALUE) == 1; }
+char IsPlayerUpRightBlocked(char i)     { return (metatilesMetaLUT[GetRightUpMetatile(i)] & PLAYER_COLLISION_VALUE) == 1; }
+char IsPlayerDownLeftBlocked(char i)    { return (metatilesMetaLUT[GetLeftDownMetatile(i)] & PLAYER_COLLISION_VALUE) == 1; }
+char IsPlayerDownRightBlocked(char i)   { return (metatilesMetaLUT[GetRightDownMetatile(i)] & PLAYER_COLLISION_VALUE) == 1; }
 
 // Moves player one pixel
 void MovePlayerNoCollision(char i)
@@ -796,6 +793,19 @@ void ShootBullet(char i)
             players[i].bullets[j].spriteX = playersSprites[i].spriteX;
             players[i].bullets[j].spriteY = playersSprites[i].spriteY;
             players[i].bullets[j].direction = playersSprites[i].direction;
+            switch (players[i].bullets[j].direction)
+            {
+                case DIRECTION_UP_LEFT:
+                case DIRECTION_DOWN_LEFT:
+                case DIRECTION_UP_RIGHT:
+                case DIRECTION_DOWN_RIGHT:
+                    players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DIAGONAL;
+                break;
+
+                default:
+                    players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DEFAULT;
+                break;
+            }
             return;
         }
     }
@@ -807,50 +817,56 @@ void UpdateBullets(char i)
     {
         if(players[i].bullets[j].isVisible)
         {
-            switch (players[i].bullets[j].direction)
+            // Move bullets based on speed and direction
+            for(char k = 0; k < players[i].bullets[j].speed; ++k)
             {
-                case DIRECTION_UP:
-                    MoveBulletUp(i, j);
-                break;
+                switch (players[i].bullets[j].direction)
+                {
+                    case DIRECTION_UP:
+                        MoveBulletUp(i, j);
+                    break;
 
-                case DIRECTION_DOWN:
-                    MoveBulletDown(i, j);
-                break;
+                    case DIRECTION_DOWN:
+                        MoveBulletDown(i, j);
+                    break;
 
-                case DIRECTION_LEFT:
-                    MoveBulletLeft(i, j);
-                break;
+                    case DIRECTION_LEFT:
+                        MoveBulletLeft(i, j);
+                    break;
 
-                case DIRECTION_RIGHT:
-                    MoveBulletRight(i, j);
-                break;
+                    case DIRECTION_RIGHT:
+                        MoveBulletRight(i, j);
+                    break;
 
-                case DIRECTION_UP_LEFT:
-                    MoveBulletUp(i, j);
-                    MoveBulletLeft(i, j);
-                break;
+                    case DIRECTION_UP_LEFT:
+                        MoveBulletUp(i, j);
+                        MoveBulletLeft(i, j);
+                    break;
 
-                case DIRECTION_UP_RIGHT:
-                    MoveBulletUp(i, j);
-                    MoveBulletRight(i, j);
-                break;
+                    case DIRECTION_UP_RIGHT:
+                        MoveBulletUp(i, j);
+                        MoveBulletRight(i, j);
+                    break;
 
-                case DIRECTION_DOWN_LEFT:
-                    MoveBulletDown(i, j);
-                    MoveBulletLeft(i, j);
-                break;
+                    case DIRECTION_DOWN_LEFT:
+                        MoveBulletDown(i, j);
+                        MoveBulletLeft(i, j);
+                    break;
 
-                case DIRECTION_DOWN_RIGHT:
-                    MoveBulletDown(i, j);
-                    MoveBulletRight(i, j);
-                break;
+                    case DIRECTION_DOWN_RIGHT:
+                        MoveBulletDown(i, j);
+                        MoveBulletRight(i, j);
+                    break;
+                }
             }
 
+            // Apply scrolling
             players[i].bullets[j].positionX -= scrollXThisFrame;
             players[i].bullets[j].spriteX -= scrollXThisFrame;
             players[i].bullets[j].positionY -= scrollYThisFrame;
             players[i].bullets[j].spriteY -= scrollYThisFrame;
 
+            // Destory bullets off screen
             if(players[i].bullets[j].spriteY < 8
             || players[i].bullets[j].spriteX < 8
             || players[i].bullets[j].spriteY > SCREEN_HEIGHT - 8
@@ -858,6 +874,16 @@ void UpdateBullets(char i)
             {
                 players[i].bullets[j].isVisible = 0;
             }
+
+            // Player bullet collision to metatiles
+            unsigned char metatile = *GSL_metatileLookup(players[i].bullets[j].positionX, players[i].bullets[j].positionY);
+            if(metatilesMetaLUT[metatile] & PLAYER_COLLISION_VALUE == 1)
+            {
+                players[i].bullets[j].isVisible = 0;
+            }
+
+            // Player bullet collision to enemy sprites
+            // TODO
         }
     }
 }
