@@ -57,6 +57,8 @@ void RenderSpritesUnsafe(void);
 #define METATILE_TRIGGER_ON 104
 
 #define PLAYER_COUNT            2
+#define PLAYER_ONE              0
+#define PLAYER_TWO              1
 #define PLAYER_START_X          904
 #define PLAYER_START_Y          928
 #define PLAYER_SPRITE_START_X   136
@@ -68,9 +70,11 @@ void RenderSpritesUnsafe(void);
 #define PLAYER_ANIMATION_HOLD_DURATION  4
 #define PLAYER_ANIMATION_FRAME_COUNT  	4
 
-#define FONT_VRAM_OFFSET 320
-#define START_WOLRD_OFFSET_X 768
-#define START_WOLRD_OFFSET_Y 832
+#define SCREEN_WIDTH            256
+#define SCREEN_HEIGHT           192
+#define FONT_VRAM_OFFSET        320
+#define START_WOLRD_OFFSET_X    768
+#define START_WOLRD_OFFSET_Y    832
 
 const unsigned char PLAYER_SPEED_DEFAULT =  2;
 const unsigned char PLAYER_SPEED_DIAGONAL = 1;
@@ -80,11 +84,12 @@ const unsigned char SCREEN_EDGE_X_INNER = 120;
 const unsigned char SCREEN_EDGE_X_OUTER = 136;
 
 // Only Player One scrolls
-unsigned char scrollXTotal = 0;
-unsigned char scrollYTotal = 0;
-unsigned char scrollXOffset = 0;
-unsigned char scrollYOffset = 0;
+unsigned int scrollXTotal = 0;
+unsigned int scrollYTotal = 0;
+unsigned char scrollXThisFrame = 0;
+unsigned char scrollYThisFrame = 0;
 
+unsigned int keyStatus = 0;
 unsigned char playerTwoJoined = 0;
 
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
@@ -116,6 +121,8 @@ void main(void)
     // Setup GSL
     GSL_initializeMap(&scrolltable, &ugtbatch_metatiles_bin);
     GSL_positionWindow(START_WOLRD_OFFSET_X, START_WOLRD_OFFSET_Y);
+    scrollXTotal = START_WOLRD_OFFSET_X;
+    scrollYTotal = START_WOLRD_OFFSET_Y;
     GSL_refreshVDP();
 
     // Init audio & play music
@@ -150,6 +157,9 @@ void main(void)
 
     while(1)
     {
+        // Read gamepad
+        keyStatus = SMS_getKeysStatus();
+
         // Player actions take n steps, 0 means new actions can be started
         for(char i = 0; i < PLAYER_COUNT; ++i)
         {
@@ -158,7 +168,7 @@ void main(void)
         }
 
         // Render (be extra careful if reordering)
-        GSL_scroll(scrollXOffset, scrollYOffset);
+        GSL_scroll(scrollXThisFrame, scrollYThisFrame);
         SMS_waitForVBlank();
         UNSAFE_SMS_copySpritestoSAT();
         SMS_initSprites();
@@ -240,46 +250,48 @@ void RenderSpritesUnsafe(void)
 
 void UpdatePlayer(char i)
 {
-	// Reset movement values every frame
-	players[i].action = ACTION_STATIONARY;
-    if(i == 0)
+    // Reset scroll, Player One only
+    if(i == PLAYER_ONE)
     {
-        scrollXOffset = 0;
-        scrollYOffset = 0;
+        scrollXThisFrame = 0;
+        scrollYThisFrame = 0;
     }
+
+    // Reset movement values every frame
+	players[i].action = ACTION_STATIONARY;
     players[i].inputVertical = DIRECTION_NONE;
     players[i].inputHorizontal = DIRECTION_NONE;
 
-    // Read gamepad
-    unsigned int ks = SMS_getKeysStatus();
-
     // TSpawn second player if they have not joined
-    if(i == 1 && !playerTwoJoined)
+    if(i == PLAYER_TWO && !playerTwoJoined)
     {
-        if ((ks & PORT_B_KEY_1) || (ks & PORT_B_KEY_2))
+        if ((keyStatus & PORT_B_KEY_1) || (keyStatus & PORT_B_KEY_2))
         {
             playerTwoJoined = 1;
             playersSprites[1].isVisible = 1;
             playersSprites[1].positionX = playersSprites[0].positionX;
             playersSprites[1].positionY = playersSprites[0].positionY;
+            playersSprites[1].spriteX = playersSprites[0].spriteX;
+            playersSprites[1].spriteY = playersSprites[0].spriteY;
         }
+        //return;
     }
 
-    if(i == 0)
+    if(i == PLAYER_ONE)
     {
         // Reset action buttons
-        if (!(ks & PORT_A_KEY_1)) players[i].actionOnePressed = 0;
-        if (!(ks & PORT_A_KEY_2)) players[i].actionTwoPressed = 0;
+        if (!(keyStatus & PORT_A_KEY_1)) players[i].actionOnePressed = 0;
+        if (!(keyStatus & PORT_A_KEY_2)) players[i].actionTwoPressed = 0;
 
         // Start actions
-        if (players[i].actionOnePressed == 0 && (ks & PORT_A_KEY_1))
+        if (players[i].actionOnePressed == 0 && (keyStatus & PORT_A_KEY_1))
         {
             players[i].actionOnePressed = 1;
             players[i].action = ACTION_ONE;
             players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
             return;
         }
-        else if (players[i].actionTwoPressed == 0 && (ks & PORT_A_KEY_2))
+        else if (players[i].actionTwoPressed == 0 && (keyStatus & PORT_A_KEY_2))
         {
             players[i].actionTwoPressed = 1;
             players[i].action = ACTION_TWO;
@@ -288,43 +300,43 @@ void UpdatePlayer(char i)
         }
 
         // Read movement keys
-        if (ks & PORT_A_KEY_UP)
+        if (keyStatus & PORT_A_KEY_UP)
         { 
             players[i].action = ACTION_MOVE;
             players[i].inputVertical = DIRECTION_UP;
         }
-        else if (ks & PORT_A_KEY_DOWN)
+        else if (keyStatus & PORT_A_KEY_DOWN)
         {
             players[i].action = ACTION_MOVE;
             players[i].inputVertical = DIRECTION_DOWN;
         }
 
-        if (ks & PORT_A_KEY_LEFT)
+        if (keyStatus & PORT_A_KEY_LEFT)
         {
             players[i].action = ACTION_MOVE;
             players[i].inputHorizontal= DIRECTION_LEFT;
         }
-        else if (ks & PORT_A_KEY_RIGHT)
+        else if (keyStatus & PORT_A_KEY_RIGHT)
         {
             players[i].action = ACTION_MOVE;
             players[i].inputHorizontal = DIRECTION_RIGHT;
         }
     }
-    else
+    else // Player Two
     {
         // Reset action buttons
-        if (!(ks & PORT_B_KEY_1)) players[i].actionOnePressed = 0;
-        if (!(ks & PORT_B_KEY_2)) players[i].actionTwoPressed = 0;
+        if (!(keyStatus & PORT_B_KEY_1)) players[i].actionOnePressed = 0;
+        if (!(keyStatus & PORT_B_KEY_2)) players[i].actionTwoPressed = 0;
 
         // Start actions
-        if (players[i].actionOnePressed == 0 && (ks & PORT_B_KEY_1))
+        if (players[i].actionOnePressed == 0 && (keyStatus & PORT_B_KEY_1))
         {
             players[i].actionOnePressed = 1;
             players[i].action = ACTION_ONE;
             players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
             return;
         }
-        else if (players[i].actionTwoPressed == 0 && (ks & PORT_B_KEY_2))
+        else if (players[i].actionTwoPressed == 0 && (keyStatus & PORT_B_KEY_2))
         {
             players[i].actionTwoPressed = 1;
             players[i].action = ACTION_TWO;
@@ -333,23 +345,23 @@ void UpdatePlayer(char i)
         }
 
         // Read movement keys
-        if (ks & PORT_B_KEY_UP)
+        if (keyStatus & PORT_B_KEY_UP)
         { 
             players[i].action = ACTION_MOVE;
             players[i].inputVertical = DIRECTION_UP;
         }
-        else if (ks & PORT_B_KEY_DOWN)
+        else if (keyStatus & PORT_B_KEY_DOWN)
         {
             players[i].action = ACTION_MOVE;
             players[i].inputVertical = DIRECTION_DOWN;
         }
 
-        if (ks & PORT_B_KEY_LEFT)
+        if (keyStatus & PORT_B_KEY_LEFT)
         {
             players[i].action = ACTION_MOVE;
             players[i].inputHorizontal= DIRECTION_LEFT;
         }
-        else if (ks & PORT_B_KEY_RIGHT)
+        else if (keyStatus & PORT_B_KEY_RIGHT)
         {
             players[i].action = ACTION_MOVE;
             players[i].inputHorizontal = DIRECTION_RIGHT;
@@ -393,14 +405,14 @@ void UpdatePlayer(char i)
         }
 
         // Move player
-        for(char i = 0; i < playersSprites[i].speed; ++i) MovePlayer(i);
+        for(char j = 0; j < playersSprites[i].speed; ++j) MovePlayerNoCollision(i); //MovePlayer(i);
     }
 
-     // Update total scroll
-    if(i == 0)
+     // Update total scroll, Player One only
+    if(i == PLAYER_ONE)
     {
-        scrollXTotal += scrollXOffset;
-        scrollYTotal += scrollYOffset;
+        scrollXTotal += scrollXThisFrame;
+        scrollYTotal += scrollYThisFrame;
     }
 }
 
@@ -443,6 +455,7 @@ char IsPlayerUpRightBlocked(char i)     { return (metatilesMetaLUT[GetRightUpMet
 char IsPlayerDownLeftBlocked(char i)    { return (metatilesMetaLUT[GetLeftDownMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
 char IsPlayerDownRightBlocked(char i)   { return (metatilesMetaLUT[GetRightDownMetatile(i)] & 1) == PLAYER_COLLISION_VALUE; }
 
+// Moves player one pixel
 void MovePlayerNoCollision(char i)
 {
     switch (playersSprites[i].direction)
@@ -485,6 +498,7 @@ void MovePlayerNoCollision(char i)
     }
 }
 
+// Moves player one pixel
 void MovePlayer(char i)
 {
     switch (playersSprites[i].direction)
@@ -561,53 +575,113 @@ void MovePlayer(char i)
 
 void MoveUp(char i)
 {
-    if (playersSprites[i].positionY <= SCREEN_EDGE_Y || playersSprites[i].positionY > GSL_getMapHeightInPixels() - SCREEN_EDGE_Y)
+    if(i == PLAYER_ONE)
     {
+        if(playersSprites[PLAYER_TWO].spriteY > SCREEN_HEIGHT - 8 && playerTwoJoined)
+            return;
+
+        if (playersSprites[i].positionY <= SCREEN_EDGE_Y || playersSprites[i].positionY > GSL_getMapHeightInPixels() - SCREEN_EDGE_Y)
+        {
+            playersSprites[i].spriteY--;
+        }
+        else 
+        {
+            scrollYThisFrame--;
+            playersSprites[PLAYER_TWO].spriteY++;
+        }
+    }
+    else
+    {
+        if(playersSprites[PLAYER_TWO].spriteY < 8)
+            return;
+
         playersSprites[i].spriteY--;
     }
-    else if(i == 0)
-    {
-        scrollYOffset--;
-    }
+
     playersSprites[i].positionY--;
 }
 
 void MoveDown(char i)
 {
-    if (playersSprites[i].positionY < SCREEN_EDGE_Y || playersSprites[i].positionY >= GSL_getMapHeightInPixels() - SCREEN_EDGE_Y)
+    if(i == PLAYER_ONE)
     {
+        if(playersSprites[PLAYER_TWO].spriteY < 8 && playerTwoJoined)
+            return;
+
+        if (playersSprites[i].positionY < SCREEN_EDGE_Y || playersSprites[i].positionY >= GSL_getMapHeightInPixels() - SCREEN_EDGE_Y)
+        {
+            playersSprites[i].spriteY++;
+        }
+        else 
+        {
+            scrollYThisFrame++;
+            playersSprites[PLAYER_TWO].spriteY--;
+        }
+    }
+    else
+    {
+        if(playersSprites[PLAYER_TWO].spriteY > SCREEN_HEIGHT - 8)
+            return;
+
         playersSprites[i].spriteY++;
     }
-    else if(i == 0)
-    {
-        scrollYOffset++;
-    }
+
     playersSprites[i].positionY++;
 }
 
 void MoveLeft(char i)
 {
-    if (playersSprites[i].positionX <= SCREEN_EDGE_X_OUTER || playersSprites[i].positionX > GSL_getMapWidthInPixels() - SCREEN_EDGE_X_INNER)
+    if(i == PLAYER_ONE)
     {
+        if(playersSprites[PLAYER_TWO].spriteX > SCREEN_WIDTH - 8 && playerTwoJoined)
+            return;
+
+        if (playersSprites[i].positionX <= SCREEN_EDGE_X_OUTER || playersSprites[i].positionX > GSL_getMapWidthInPixels() - SCREEN_EDGE_X_INNER)
+        {
+            playersSprites[i].spriteX--;
+        }
+        else
+        {
+            scrollXThisFrame--;
+            playersSprites[PLAYER_TWO].spriteX++;
+        }
+    }
+    else
+    {
+        if(playersSprites[PLAYER_TWO].spriteX < 8)
+            return;
+
         playersSprites[i].spriteX--;
     }
-    else if(i == 0)
-    {
-        scrollXOffset--;
-    }
+
     playersSprites[i].positionX--;
 }
 
 void MoveRight(char i)
 {
-    if (playersSprites[i].positionX < SCREEN_EDGE_X_OUTER || playersSprites[i].positionX >= GSL_getMapWidthInPixels() - SCREEN_EDGE_X_INNER)
+    if(i == PLAYER_ONE)
     {
+        if(playersSprites[PLAYER_TWO].spriteX < 8 && playerTwoJoined)
+            return;
+
+        if (playersSprites[i].positionX < SCREEN_EDGE_X_OUTER || playersSprites[i].positionX >= GSL_getMapWidthInPixels() - SCREEN_EDGE_X_INNER)
+        {
+            playersSprites[i].spriteX++;
+        }
+        else
+        {
+            scrollXThisFrame++;
+            playersSprites[PLAYER_TWO].spriteX--;
+        }
+    }
+    else
+    {
+        if(playersSprites[PLAYER_TWO].spriteX > SCREEN_WIDTH - 8)
+            return;
+
         playersSprites[i].spriteX++;
     }
-    else if(i == 0)
-    {
-        scrollXOffset++;
-    }
+
     playersSprites[i].positionX++;
 }
 
