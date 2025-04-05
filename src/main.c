@@ -154,15 +154,21 @@ void main(void)
 
     while(1)
     {
-        // Player actions take n steps, 0 means new actions can be started
-        for(char i = 0; i < PLAYER_COUNT; ++i)
+        // Only process player actions if the game is in the playing state
+        if (gameState == 1)
         {
-            if (players[i].actionCount == 0) UpdatePlayer(i);
-            if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
-        }
+            // Player actions take n steps, 0 means new actions can be started
+            for(char i = 0; i < PLAYER_COUNT; ++i)
+            {
+                if (players[i].actionCount == 0) UpdatePlayer(i);
+                if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
+            }
 
-        // Render (be extra careful if reordering)
-        GSL_scroll(scrollXOffset, scrollYOffset);
+            // Render (be extra careful if reordering)
+            GSL_scroll(scrollXOffset, scrollYOffset);
+        }
+        
+        // These should always run, even when paused
         SMS_waitForVBlank();
         UNSAFE_SMS_copySpritestoSAT();
         SMS_initSprites();
@@ -644,9 +650,22 @@ void UpdateAction(char i)
 
 void MetatileInteraction(unsigned char *metatile)
 {
-    if (*metatile == METATILE_TRIGGER_OFF)
-	{
-		*metatile = METATILE_TRIGGER_ON;
-		GSL_metatileUpdate();
-	}
+
+    if (*metatile == METATILE_TRIGGER_ON)
+    {
+        *metatile = METATILE_TRIGGER_OFF;
+        GSL_metatileUpdate();
+    }
+    else if (*metatile == METATILE_TRIGGER_OFF)
+    {
+        *metatile = METATILE_TRIGGER_ON;
+        GSL_metatileUpdate();
+        
+        // Decrement factory count and check if game is won
+        numFactories--;
+        if (numFactories == 0)
+        {
+            gameState = 2; // Set game state to "won" (paused)
+        }
+    }
 }
