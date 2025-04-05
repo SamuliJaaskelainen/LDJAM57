@@ -49,13 +49,19 @@ void MoveBulletUp(char i, char j);
 void MoveBulletDown(char i, char j);
 void MoveBulletLeft(char i, char j);
 void MoveBulletRight(char i, char j);
+void UpdateEnemyBullets(void);
+void MoveEnemyBulletUp(char i);
+void MoveEnemyBulletDown(char i); 
+void MoveEnemyBulletLeft(char i);
+void MoveEnemyBulletRight(char i);
 
 // Title and End Screen
 void LoadTitleScreen(void);
 void LoadEndScreen(void);
+void LoadGameScreen(void);
 void HandleTitleScreen(void);
-void HandleGameScreen(void);
 void HandleEndScreen(void);
+void HandleGameScreen(void);
 
 // Sprite Rendering
 void RenderSprites(void);
@@ -79,6 +85,7 @@ void StopMusic(void);
 #define ACTION_ONE  			1
 #define ACTION_TWO  			2
 #define ACTION_MOVE  			3
+#define ACTION_STUN  			4
 
 // Metatile ids require updating every time the map is exported
 #define METATILE_TRIGGER_OFF    8
@@ -94,6 +101,7 @@ void StopMusic(void);
 #define PLAYER_SPRITE_START_Y   96
 #define PLAYER_ACTION_FRAME_COUNT       15
 #define PLAYER_ACTION_INTERACTION_FRAME 14
+#define PLAYER_STUN_FRAME_COUNT         20
 #define PLAYER_COLLISION_VALUE  	    1
 #define PLAYER_ANIMATION_HOLD_DURATION  4
 
@@ -112,6 +120,10 @@ void StopMusic(void);
 // Game settings
 #define MAX_FACTORY_NUM 5
 
+// Enemies
+#define ENEMY_BULLET_COUNT          6
+#define ENEMY_BULLET_SPEED_DEFAULT  2
+
 const unsigned char PLAYER_SPEED_DEFAULT =  2;
 const unsigned char PLAYER_SPEED_DIAGONAL = 1;
 const unsigned char PLAYER_BULLET_SPEED_DEFAULT =  4;
@@ -127,6 +139,11 @@ unsigned int scrollYTotal = 0;
 unsigned char scrollXThisFrame = 0;
 unsigned char scrollYThisFrame = 0;
 
+// Bullet debug timers
+unsigned char bulletShootTimer = 0;
+unsigned char bulletShootRate = 10;
+unsigned char bulletShootDir = 1;
+
 unsigned int keyStatus = 0;
 unsigned char playerTwoJoined = 0;
 
@@ -138,6 +155,7 @@ unsigned char numFactories = MAX_FACTORY_NUM; // when this reaches 0, game is wo
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
+struct SpriteObject enemyBullets[ENEMY_BULLET_COUNT];
 
 // Header
 SMS_EMBED_SEGA_ROM_HEADER(999, 0);
@@ -248,6 +266,105 @@ void LoadEndScreen(void)
     SMS_displayOn();
 }
 
+void LoadGameScreen(void)
+{
+    gameState = GAME_STATE_GAME;
+
+    // Init audio & play music
+    LoadAndPlayMusic();
+
+    // Setup VDP
+    SMS_displayOff();
+    SMS_useFirstHalfTilesforSprites(0);
+    SMS_VDPturnOnFeature(VDPFEATURE_HIDEFIRSTCOL);
+    SMS_setSpriteMode(SPRITEMODE_TALL);
+    SMS_VRAMmemsetW(0, 0, 0);
+    SMS_mapROMBank(ugtbatch_palette_bin_bank);
+    SMS_loadBGPalette(&ugtbatch_palette_bin);
+    SMS_mapROMBank(spritepalette_pal_bin_bank);
+    SMS_loadSpritePalette(&spritepalette_pal_bin);
+    SMS_mapROMBank(ugtbatch_tiles_bin_bank);
+    SMS_loadTiles(&ugtbatch_tiles_bin, 0, ugtbatch_tiles_bin_size);
+    SMS_mapROMBank(pollen_tiles_bin_bank);
+    SMS_loadTiles(&pollen_tiles_bin, 264, pollen_tiles_bin_size);
+    SMS_mapROMBank(bullet_tiles_bin_bank);
+    SMS_loadTiles(&bullet_tiles_bin, 268, bullet_tiles_bin_size);
+    SMS_displayOn();
+
+    // Setup scrolltable
+    SMS_mapROMBank(ugtbatch_scrolltable_bin_bank);
+    for (int i = 0; i < ugtbatch_scrolltable_bin_size; i++) scrolltable[i] = *(ugtbatch_scrolltable_bin + i);
+
+    // Setup GSL
+    SMS_mapROMBank(ugtbatch_metatiles_bin_bank);
+    GSL_initializeMap(&scrolltable, &ugtbatch_metatiles_bin);
+    GSL_positionWindow(START_WOLRD_OFFSET_X, START_WOLRD_OFFSET_Y);
+    scrollXTotal = START_WOLRD_OFFSET_X;
+    scrollYTotal = START_WOLRD_OFFSET_Y;
+    GSL_refreshVDP();
+
+    // Init players
+    for(char i = 0; i < PLAYER_COUNT; ++i)
+    {
+        playersSprites[i].positionX = PLAYER_START_X;
+        playersSprites[i].positionY = PLAYER_START_Y;
+        playersSprites[i].spriteX = PLAYER_SPRITE_START_X;
+        playersSprites[i].spriteY = PLAYER_SPRITE_START_Y;
+        playersSprites[i].isVisible = i == 0;
+        playersSprites[i].size = 16;
+        playersSprites[i].speed = PLAYER_SPEED_DEFAULT;
+        playersSprites[i].animationFrameCounter = 0;
+        playersSprites[i].currentAnimationFrame = 0;
+        playersSprites[i].animationFrameDataCount = 4;
+        setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
+        playersSprites[i].direction = DIRECTION_DOWN;
+        players[i].ramDataAddress = i == 0 ? 8192 : 8320;
+        playersSprites[i].spriteOneIndex = (i << 2);
+        playersSprites[i].spriteTwoIndex = 2 + (i << 2);
+        players[i].action = ACTION_STATIONARY;
+        players[i].actionCount = 0;
+        players[i].actionOnePressed = 0;
+        players[i].inputVertical = DIRECTION_NONE;
+        players[i].inputHorizontal = DIRECTION_NONE;
+
+        for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
+        {
+            players[i].bullets[j].positionX = 0;
+            players[i].bullets[j].positionY = 0;
+            players[i].bullets[j].spriteX = 0;
+            players[i].bullets[j].spriteY = 0;
+            players[i].bullets[j].isVisible = 0;
+            players[i].bullets[j].size = 16;
+            players[i].bullets[j].speed = 4;
+            players[i].bullets[j].direction = DIRECTION_DOWN;
+            players[i].bullets[j].spriteOneIndex = 8;
+            players[i].bullets[j].spriteTwoIndex = 10;
+        }
+    }
+
+    // Init enemy bullets
+    for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
+    {
+        enemyBullets[i].positionX = 0;
+        enemyBullets[i].positionY = 0;
+        enemyBullets[i].spriteX = 0;
+        enemyBullets[i].spriteY = 0;
+        enemyBullets[i].isVisible = 0;
+        enemyBullets[i].size = 8;
+        enemyBullets[i].speed = 4;
+        enemyBullets[i].direction = DIRECTION_DOWN;
+        enemyBullets[i].spriteOneIndex = 12;
+        enemyBullets[i].spriteTwoIndex = 0;
+    }
+
+    // Reset game progress variables
+    numFactories = MAX_FACTORY_NUM;
+    playerTwoJoined = 0;
+
+    // Set bank for streaming tiles
+    SMS_mapROMBank(player_tiles_bin_bank);
+}
+
 void HandleTitleScreen(void)
 {
     // TODO: Prevent holding key 1 for direct skipping after end screen
@@ -255,84 +372,7 @@ void HandleTitleScreen(void)
     // Check for player one action button to start game
     if (keyStatus & PORT_A_KEY_1)
     {
-        gameState = GAME_STATE_GAME;
-
-        // Setup VDP
-        SMS_displayOff();
-        SMS_useFirstHalfTilesforSprites(0);
-        SMS_VDPturnOnFeature(VDPFEATURE_HIDEFIRSTCOL);
-        SMS_setSpriteMode(SPRITEMODE_TALL);
-        SMS_VRAMmemsetW(0, 0, 0);
-        SMS_mapROMBank(ugtbatch_palette_bin_bank);
-        SMS_loadBGPalette(&ugtbatch_palette_bin);
-        SMS_mapROMBank(spritepalette_pal_bin_bank);
-        SMS_loadSpritePalette(&spritepalette_pal_bin);
-        SMS_mapROMBank(ugtbatch_tiles_bin_bank);
-        SMS_loadTiles(&ugtbatch_tiles_bin, 0, ugtbatch_tiles_bin_size);
-        SMS_mapROMBank(pollen_tiles_bin_bank);
-        SMS_loadTiles(&pollen_tiles_bin, 264, pollen_tiles_bin_size);
-        SMS_displayOn();
-
-        // Setup scrolltable
-        SMS_mapROMBank(ugtbatch_scrolltable_bin_bank);
-        for (int i = 0; i < ugtbatch_scrolltable_bin_size; i++) scrolltable[i] = *(ugtbatch_scrolltable_bin + i);
-
-        // Setup GSL
-        SMS_mapROMBank(ugtbatch_metatiles_bin_bank);
-        GSL_initializeMap(&scrolltable, &ugtbatch_metatiles_bin);
-        GSL_positionWindow(START_WOLRD_OFFSET_X, START_WOLRD_OFFSET_Y);
-        scrollXTotal = START_WOLRD_OFFSET_X;
-        scrollYTotal = START_WOLRD_OFFSET_Y;
-        GSL_refreshVDP();
-
-        // Init audio & play music
-        LoadAndPlayMusic();
-
-        // Init players
-        for(char i = 0; i < PLAYER_COUNT; ++i)
-        {
-            playersSprites[i].positionX = PLAYER_START_X;
-            playersSprites[i].positionY = PLAYER_START_Y;
-            playersSprites[i].spriteX = PLAYER_SPRITE_START_X;
-            playersSprites[i].spriteY = PLAYER_SPRITE_START_Y;
-            playersSprites[i].isVisible = i == 0;
-            playersSprites[i].size = 16;
-            playersSprites[i].speed = PLAYER_SPEED_DEFAULT;
-            playersSprites[i].animationFrameCounter = 0;
-            playersSprites[i].currentAnimationFrame = 0;
-            playersSprites[i].animationFrameDataCount = 4;
-            setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
-            playersSprites[i].direction = DIRECTION_DOWN;
-            players[i].ramDataAddress = i == 0 ? 8192 : 8320;
-            playersSprites[i].spriteOneIndex = (i << 2);
-            playersSprites[i].spriteTwoIndex = 2 + (i << 2);
-            players[i].action = ACTION_STATIONARY;
-            players[i].actionCount = 0;
-            players[i].actionOnePressed = 0;
-            players[i].inputVertical = DIRECTION_NONE;
-            players[i].inputHorizontal = DIRECTION_NONE;
-
-            for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
-            {
-                players[i].bullets[j].positionX = 0;
-                players[i].bullets[j].positionY = 0;
-                players[i].bullets[j].spriteX = 0;
-                players[i].bullets[j].spriteY = 0;
-                players[i].bullets[j].isVisible = 0;
-                players[i].bullets[j].size = 16;
-                players[i].bullets[j].speed = 4;
-                players[i].bullets[j].direction = DIRECTION_DOWN;
-                players[i].bullets[j].spriteOneIndex = 8;
-                players[i].bullets[j].spriteTwoIndex = 10;
-            }
-        }
-
-        // Reset game progress variables
-        numFactories = MAX_FACTORY_NUM;
-        playerTwoJoined = 0;
-
-        // Set bank for streaming tiles
-        SMS_mapROMBank(player_tiles_bin_bank);
+        LoadGameScreen();
     }
 }
 
@@ -355,6 +395,7 @@ void HandleGameScreen(void)
         if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
         UpdatePlayerAnimations(i);
         UpdateBullets(i);
+        UpdateEnemyBullets();
     }
 }
 
@@ -376,6 +417,15 @@ void RenderSprites(void)
                 SMS_addSprite(players[i].bullets[j].spriteX - 8, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteOneIndex);
                 SMS_addSprite(players[i].bullets[j].spriteX, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteTwoIndex);
             }
+        }
+    }
+
+    // Render enemy bullets
+    for(char j = 0; j < ENEMY_BULLET_COUNT; ++j)
+    {
+        if(enemyBullets[j].isVisible)
+        {
+            SMS_addSprite(enemyBullets[j].spriteX - 4, enemyBullets[j].spriteY - 4, enemyBullets[j].spriteOneIndex);
         }
     }
 }
@@ -407,6 +457,7 @@ void UpdatePlayerAnimations(char i)
             if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveUp);
             else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
             else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimA);
             else setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
         break;
 
@@ -414,6 +465,7 @@ void UpdatePlayerAnimations(char i)
             if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveDown);
             else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
             else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimA);
             else setSpriteAnimation(&playersSprites[i], playerAnimIdleDown);
         break;
 
@@ -423,6 +475,7 @@ void UpdatePlayerAnimations(char i)
             if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveLeft);
             else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
             else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimA);
             else setSpriteAnimation(&playersSprites[i], playerAnimIdleLeft);
         break;
 
@@ -432,6 +485,7 @@ void UpdatePlayerAnimations(char i)
             if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveRight);
             else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
             else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
+            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimA);
             else setSpriteAnimation(&playersSprites[i], playerAnimIdleRight);
         break;
     }
@@ -1052,6 +1106,115 @@ void MetatileFactoryHit(unsigned char *metatile)
         if (numFactories == 0)
         {
             LoadEndScreen();
+        }
+    }
+}
+
+void MoveEnemyBulletUp(char i)       { enemyBullets[i].positionY -= enemyBullets[i].speed; enemyBullets[i].spriteY -= enemyBullets[i].speed; }
+void MoveEnemyBulletDown(char i)     { enemyBullets[i].positionY += enemyBullets[i].speed; enemyBullets[i].spriteY += enemyBullets[i].speed; }
+void MoveEnemyBulletLeft(char i)     { enemyBullets[i].positionX -= enemyBullets[i].speed; enemyBullets[i].spriteX -= enemyBullets[i].speed; }
+void MoveEnemyBulletRight(char i)    { enemyBullets[i].positionX += enemyBullets[i].speed; enemyBullets[i].spriteX += enemyBullets[i].speed; }
+
+void UpdateEnemyBullets(void)
+{
+    // DEBUG BULLET SHOOT STARTS
+    bulletShootTimer++;
+    if(bulletShootTimer > bulletShootRate)
+    {
+        bulletShootTimer = 0;
+
+        for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
+        {
+            if(!enemyBullets[i].isVisible)
+            {
+                enemyBullets[i].isVisible = 1;
+                enemyBullets[i].positionX = playersSprites[PLAYER_ONE].positionX - 64;
+                enemyBullets[i].positionY = playersSprites[PLAYER_ONE].positionY - 64;
+                enemyBullets[i].spriteX = playersSprites[PLAYER_ONE].spriteX - 64;
+                enemyBullets[i].spriteY = playersSprites[PLAYER_ONE].spriteY - 64;
+                enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+                enemyBullets[i].direction = bulletShootDir;
+                bulletShootDir++;
+                if(bulletShootDir > 8) bulletShootDir = 1;
+                break;
+            }
+        }
+    }
+    // DEBUG BULLET SHOOT ENDS
+
+    for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
+    {
+        if(enemyBullets[i].isVisible)
+        {
+            {
+                switch (enemyBullets[i].direction)
+                {
+                    case DIRECTION_UP:
+                        MoveEnemyBulletUp(i);
+                    break;
+
+                    case DIRECTION_DOWN:
+                        MoveEnemyBulletDown(i);
+                    break;
+
+                    case DIRECTION_LEFT:
+                        MoveEnemyBulletLeft(i);
+                    break;
+
+                    case DIRECTION_RIGHT:
+                        MoveEnemyBulletRight(i);
+                    break;
+
+                    case DIRECTION_UP_LEFT:
+                        MoveEnemyBulletUp(i);
+                        MoveEnemyBulletLeft(i);
+                    break;
+
+                    case DIRECTION_UP_RIGHT:
+                        MoveEnemyBulletUp(i);
+                        MoveEnemyBulletRight(i);
+                    break;
+
+                    case DIRECTION_DOWN_LEFT:
+                        MoveEnemyBulletDown(i);
+                        MoveEnemyBulletLeft(i);
+                    break;
+
+                    case DIRECTION_DOWN_RIGHT:
+                        MoveEnemyBulletDown(i);
+                        MoveEnemyBulletRight(i);
+                    break;
+                }
+            }
+
+            // Apply scrolling
+            enemyBullets[i].positionX -= scrollXThisFrame;
+            enemyBullets[i].spriteX -= scrollXThisFrame;
+            enemyBullets[i].positionY -= scrollYThisFrame;
+            enemyBullets[i].spriteY -= scrollYThisFrame;
+
+            // Destory bullets off screen
+            if(enemyBullets[i].spriteY < 8
+            || enemyBullets[i].spriteX < 8
+            || enemyBullets[i].spriteY > SCREEN_HEIGHT - 8
+            || enemyBullets[i].spriteX > SCREEN_WIDTH - 8)
+            {
+                enemyBullets[i].isVisible = 0;
+            }
+
+             // Check collisions to players
+             for(char j = 0; j < PLAYER_COUNT; ++j)
+            {
+                if(playersSprites[j].isVisible)
+                {
+                    if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
+                    {
+                        players[j].action = ACTION_STUN;
+                        players[j].actionCount = PLAYER_STUN_FRAME_COUNT;
+                        enemyBullets[i].isVisible = 0;
+                    }
+                }
+            }
         }
     }
 }

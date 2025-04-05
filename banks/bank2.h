@@ -19,6 +19,9 @@ extern const unsigned char	ugtbatch_metatiles_bin[144];
 extern const unsigned char	pollen_tiles_bin[128];
 #define				pollen_tiles_bin_size 128
 #define				pollen_tiles_bin_bank 2
+extern const unsigned char	bullet_tiles_bin[64];
+#define				bullet_tiles_bin_size 64
+#define				bullet_tiles_bin_bank 2
 extern const unsigned char	kaijulove_psg[3087];
 #define				kaijulove_psg_size 3087
 #define				kaijulove_psg_bank 2
