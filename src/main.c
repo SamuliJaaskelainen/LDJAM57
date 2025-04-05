@@ -116,8 +116,6 @@ void main(void)
     // Setup GSL
     GSL_initializeMap(&scrolltable, &ugtbatch_metatiles_bin);
     GSL_positionWindow(START_WOLRD_OFFSET_X, START_WOLRD_OFFSET_Y);
-    scrollXTotal = START_WOLRD_OFFSET_X;
-    scrollYTotal = START_WOLRD_OFFSET_Y;
     GSL_refreshVDP();
 
     // Init audio & play music
@@ -235,7 +233,6 @@ void RenderSpritesUnsafe(void)
     for(char i = 0; i< PLAYER_COUNT; ++i)
     {
         if(!playersSprites[i].isVisible) return;
-
         SMS_mapROMBank(playersSprites[i].bank);
         UNSAFE_SMS_VRAMmemcpy128(playersSprites[i].ramDataAddress, &player_tiles_bin[playersSprites[i].animationFrameData[playersSprites[i].currentAnimationFrame]]);
     }
