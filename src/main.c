@@ -89,6 +89,10 @@ unsigned char playerTwoJoined = 0;
 
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 
+// Gamestate and counters
+unsigned char gameState = 1; // 0 is not started, 1 is playing, 2 is won
+unsigned char numFactories = 5; // when this reaches 0, game is won
+
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
 
@@ -148,7 +152,7 @@ void main(void)
         players[i].inputHorizontal = DIRECTION_NONE;
     }
 
-    while(1)
+    while(gamePlaying)
     {
         // Player actions take n steps, 0 means new actions can be started
         for(char i = 0; i < PLAYER_COUNT; ++i)
