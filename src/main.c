@@ -29,9 +29,8 @@ char IsPlayerUpRightBlocked(char i);
 char IsPlayerDownLeftBlocked(char i);
 char IsPlayerDownRightBlocked(char i);
 
-
 // Metatiles
-void MetatileInteraction(unsigned char * metatile);
+void MetatileFactoryHit(unsigned char * metatile);
 char GetTopLeftMetatile(char i);
 char GetTopRightMetatile(char i);
 char GetBottomLeftMetatile(char i);
@@ -82,8 +81,9 @@ void LoadSFX(void);
 #define ACTION_MOVE  			3
 
 // Metatile ids require updating every time the map is exported
-#define METATILE_TRIGGER_OFF 8
-#define METATILE_TRIGGER_ON 104
+#define METATILE_TRIGGER_OFF    8
+#define METATILE_TRIGGER_ON     104
+#define METATILE_TURRET         0
 
 #define PLAYER_COUNT            2
 #define PLAYER_ONE              0
@@ -145,28 +145,30 @@ SMS_EMBED_SDSC_HEADER(1, 0, 2024, 9, 24, "Samuli", "LDJAM57", "Love");
 
 void main(void)
 {
-    // Set initial game state to title
-    gameState = GAME_STATE_TITLE;
+    // Init audio & play music
+    //LoadMusic();
 
     // Load the title screen first
     LoadTitleScreen();
 
- while(1) {
+    while(1)
+    {
         // Read gamepad
         keyStatus = SMS_getKeysStatus();
         
         // Handle current game state
-        switch (gameState) {
+        switch (gameState)
+        {
             case GAME_STATE_TITLE:
                 // Simple rendering for title screen - no scrolling needed
                 SMS_waitForVBlank();
-                SMS_copySpritestoSAT();
+                //UNSAFE_SMS_copySpritestoSAT();
                 HandleTitleScreen();
                 break;
                 
             case GAME_STATE_GAME:
                 HandleGameScreen();
-                // // Game-specific rendering
+                // Game-specific rendering
                 GSL_scroll(scrollXThisFrame, scrollYThisFrame);
                 SMS_waitForVBlank();
                 UNSAFE_SMS_copySpritestoSAT();
@@ -174,15 +176,13 @@ void main(void)
                 RenderSpritesUnsafe();
                 RenderSprites();
                 GSL_VBlank();
-
                 break;
                 
             case GAME_STATE_END:
-                HandleEndScreen();
-                
                 // Simple rendering for end screen - no scrolling needed
                 SMS_waitForVBlank();
-                SMS_copySpritestoSAT();
+                //UNSAFE_SMS_copySpritestoSAT();
+                HandleEndScreen();
                 break;
         }
         
@@ -196,11 +196,13 @@ void LoadMusic(void)
     // switch to bank that has music
     SMS_mapROMBank(kaijulove_psg_bank);
     PSGPlay(&kaijulove_psg);
-
 }
 
 // title and end screen handling
-void LoadTitleScreen(void) {
+void LoadTitleScreen(void)
+{
+    gameState = GAME_STATE_TITLE;
+
     // Clear the screen and load title graphics
     SMS_displayOff();
     SMS_VRAMmemsetW(0, 0, 0x4000); // Clear VRAM
@@ -223,7 +225,10 @@ void LoadTitleScreen(void) {
     SMS_displayOn();
 }
 
-void LoadEndScreen(void) {
+void LoadEndScreen(void)
+{
+    gameState = GAME_STATE_END;
+
     // Clear the screen and load end screen graphics
     SMS_displayOff();
     SMS_VRAMmemsetW(0, 0, 0x4000); // Clear VRAM
@@ -246,20 +251,15 @@ void LoadEndScreen(void) {
     SMS_displayOn();
 }
 
-void HandleTitleScreen(void) {
+void HandleTitleScreen(void)
+{
     // Check for player one action button to start game
-    if (keyStatus & PORT_A_KEY_1) {
+    if (keyStatus & PORT_A_KEY_1)
+    {
         gameState = GAME_STATE_GAME;
-        
-        // Reset game state here
-        // Initialize player positions, etc.
-        
-        // Initialize the player variables
-        // Init player variables
 
         // Setup VDP
         SMS_displayOff();
-        //SMS_VRAMmemsetW(0, 0, 0x4000); // Clear VRAM
         SMS_useFirstHalfTilesforSprites(0);
         SMS_VDPturnOnFeature(VDPFEATURE_HIDEFIRSTCOL);
         SMS_setSpriteMode(SPRITEMODE_TALL);
@@ -286,75 +286,75 @@ void HandleTitleScreen(void) {
         scrollYTotal = START_WOLRD_OFFSET_Y;
         GSL_refreshVDP();
 
-        // Init audio & play music
-        LoadMusic();
-    for(char i = 0; i < PLAYER_COUNT; ++i)
-    {
-        playersSprites[i].positionX = PLAYER_START_X;
-        playersSprites[i].positionY = PLAYER_START_Y;
-        playersSprites[i].spriteX = PLAYER_SPRITE_START_X;
-        playersSprites[i].spriteY = PLAYER_SPRITE_START_Y;
-        playersSprites[i].isVisible = i == 0;
-        playersSprites[i].size = 16;
-        playersSprites[i].speed = PLAYER_SPEED_DEFAULT;
-        playersSprites[i].animationFrameCounter = 0;
-        playersSprites[i].currentAnimationFrame = 0;
-        playersSprites[i].animationFrameDataCount = 4;
-        setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
-        playersSprites[i].direction = DIRECTION_DOWN;
-        players[i].ramDataAddress = i == 0 ? 8192 : 8320;
-        playersSprites[i].spriteOneIndex = (i << 2);
-        playersSprites[i].spriteTwoIndex = 2 + (i << 2);
-        players[i].action = ACTION_STATIONARY;
-        players[i].actionCount = 0;
-        players[i].actionOnePressed = 0;
-        players[i].inputVertical = DIRECTION_NONE;
-        players[i].inputHorizontal = DIRECTION_NONE;
-
-        for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
+        // Init players
+        for(char i = 0; i < PLAYER_COUNT; ++i)
         {
-            players[i].bullets[j].positionX = 0;
-            players[i].bullets[j].positionY = 0;
-            players[i].bullets[j].spriteX = 0;
-            players[i].bullets[j].spriteY = 0;
-            players[i].bullets[j].isVisible = 0;
-            players[i].bullets[j].size = 16;
-            players[i].bullets[j].speed = 4;
-            players[i].bullets[j].direction = DIRECTION_DOWN;
-            players[i].bullets[j].spriteOneIndex = 8;
-            players[i].bullets[j].spriteTwoIndex = 10;
+            playersSprites[i].positionX = PLAYER_START_X;
+            playersSprites[i].positionY = PLAYER_START_Y;
+            playersSprites[i].spriteX = PLAYER_SPRITE_START_X;
+            playersSprites[i].spriteY = PLAYER_SPRITE_START_Y;
+            playersSprites[i].isVisible = i == 0;
+            playersSprites[i].size = 16;
+            playersSprites[i].speed = PLAYER_SPEED_DEFAULT;
+            playersSprites[i].animationFrameCounter = 0;
+            playersSprites[i].currentAnimationFrame = 0;
+            playersSprites[i].animationFrameDataCount = 4;
+            setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
+            playersSprites[i].direction = DIRECTION_DOWN;
+            players[i].ramDataAddress = i == 0 ? 8192 : 8320;
+            playersSprites[i].spriteOneIndex = (i << 2);
+            playersSprites[i].spriteTwoIndex = 2 + (i << 2);
+            players[i].action = ACTION_STATIONARY;
+            players[i].actionCount = 0;
+            players[i].actionOnePressed = 0;
+            players[i].inputVertical = DIRECTION_NONE;
+            players[i].inputHorizontal = DIRECTION_NONE;
+
+            for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
+            {
+                players[i].bullets[j].positionX = 0;
+                players[i].bullets[j].positionY = 0;
+                players[i].bullets[j].spriteX = 0;
+                players[i].bullets[j].spriteY = 0;
+                players[i].bullets[j].isVisible = 0;
+                players[i].bullets[j].size = 16;
+                players[i].bullets[j].speed = 4;
+                players[i].bullets[j].direction = DIRECTION_DOWN;
+                players[i].bullets[j].spriteOneIndex = 8;
+                players[i].bullets[j].spriteTwoIndex = 10;
+            }
         }
-    }
-        
-        
+
         // Reset game progress variables
         numFactories = MAX_FACTORY_NUM;
         playerTwoJoined = 0;
-        
+
+        // Set bank for streaming tiles
+        SMS_mapROMBank(player_tiles_bin_bank);
     }
 }
 
-void HandleEndScreen(void) {
+void HandleEndScreen(void)
+{
     // Check for button press to return to title
-    if (keyStatus & PORT_A_KEY_1) {
+    if (keyStatus & PORT_A_KEY_1)
+    {
         gameState = GAME_STATE_TITLE;
         LoadTitleScreen();
     }
 }
 
-void HandleGameScreen(void) {
+void HandleGameScreen(void)
+{
     // Shoot take n steps, 0 means new actions can be started
-    for(char i = 0; i < PLAYER_COUNT; ++i) {
+    for(char i = 0; i < PLAYER_COUNT; ++i)
+    {
         if (players[i].actionCount == 0) UpdatePlayer(i);
         if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
         UpdatePlayerAnimations(i);
         UpdateBullets(i);
     }
-    
-    // rest of game-specific rendering handled in main loop
 }
-
-
 
 void RenderSprites(void)
 {
@@ -383,7 +383,6 @@ void RenderSpritesUnsafe(void)
     for(char i = 0; i< PLAYER_COUNT; ++i)
     {
         if(!playersSprites[i].isVisible) return;
-        SMS_mapROMBank(player_tiles_bin_bank);
         UNSAFE_SMS_VRAMmemcpy128(players[i].ramDataAddress, &player_tiles_bin[playersSprites[i].animationFrameData[playersSprites[i].currentAnimationFrame]]);
     }
 }
@@ -880,21 +879,6 @@ void UpdateAction(char i)
         else if(players[i].action == ACTION_TWO)
         {
             ShootBullet(i);
-
-            // Move this elsewhere
-            unsigned char *metatile;
-
-            if (playersSprites[i].direction == DIRECTION_UP) metatile = GSL_metatileLookup(playersSprites[i].positionX - 8, playersSprites[i].positionY - 1);
-            else if (playersSprites[i].direction == DIRECTION_DOWN) metatile = GSL_metatileLookup(playersSprites[i].positionX - 8, playersSprites[i].positionY + 8);
-            else if (playersSprites[i].direction == DIRECTION_LEFT || playersSprites[i].direction == DIRECTION_UP_LEFT || playersSprites[i].direction == DIRECTION_DOWN_LEFT) metatile = GSL_metatileLookup(playersSprites[i].positionX - 9, playersSprites[i].positionY - 8);
-            else metatile = GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY - 8);
-            MetatileInteraction(metatile);
-
-            if (playersSprites[i].direction == DIRECTION_UP) metatile = GSL_metatileLookup(playersSprites[i].positionX + 7, playersSprites[i].positionY - 1);
-            else if (playersSprites[i].direction == DIRECTION_DOWN) metatile = GSL_metatileLookup(playersSprites[i].positionX + 7, playersSprites[i].positionY + 8);
-            else if (playersSprites[i].direction == DIRECTION_LEFT || playersSprites[i].direction == DIRECTION_UP_LEFT || playersSprites[i].direction == DIRECTION_DOWN_LEFT) metatile = GSL_metatileLookup(playersSprites[i].positionX - 9, playersSprites[i].positionY + 7);
-            else metatile = GSL_metatileLookup(playersSprites[i].positionX + 8, playersSprites[i].positionY + 7);
-            MetatileInteraction(metatile);
         }
     }
 }
@@ -955,6 +939,11 @@ void ShootBullet(char i)
         }
     }
 }
+
+void MoveBulletUp(char i, char j)       { players[i].bullets[j].positionY--; players[i].bullets[j].spriteY--; }
+void MoveBulletDown(char i, char j)     { players[i].bullets[j].positionY++; players[i].bullets[j].spriteY++; }
+void MoveBulletLeft(char i, char j)     { players[i].bullets[j].positionX--; players[i].bullets[j].spriteX--; }
+void MoveBulletRight(char i, char j)    { players[i].bullets[j].positionX++; players[i].bullets[j].spriteX++; }
 
 void UpdateBullets(char i)
 {
@@ -1022,8 +1011,19 @@ void UpdateBullets(char i)
 
             // Player bullet collision to metatiles
             unsigned char metatile = *GSL_metatileLookup(players[i].bullets[j].positionX, players[i].bullets[j].positionY);
-            if(metatilesMetaLUT[metatile] & PLAYER_COLLISION_VALUE == 1)
+            if(metatile == METATILE_TRIGGER_OFF || metatile == METATILE_TRIGGER_ON)
             {
+                MetatileFactoryHit(metatile);
+                players[i].bullets[j].isVisible = 0;
+            }
+            else if(metatile == METATILE_TURRET)
+            {
+                // TODO: Hit turret!
+                players[i].bullets[j].isVisible = 0;
+            }
+            else if(metatilesMetaLUT[metatile] & PLAYER_COLLISION_VALUE == 1)
+            {
+                // Hit wall!
                 players[i].bullets[j].isVisible = 0;
             }
 
@@ -1033,26 +1033,23 @@ void UpdateBullets(char i)
     }
 }
 
-void MoveBulletUp(char i, char j)
+void MetatileFactoryHit(unsigned char *metatile)
 {
-    players[i].bullets[j].positionY--;
-    players[i].bullets[j].spriteY--;
-}
-
-void MoveBulletDown(char i, char j)
-{
-    players[i].bullets[j].positionY++;
-    players[i].bullets[j].spriteY++;
-}
-
-void MoveBulletLeft(char i, char j)
-{
-    players[i].bullets[j].positionX--;
-    players[i].bullets[j].spriteX--;
-}
-
-void MoveBulletRight(char i, char j)
-{
-    players[i].bullets[j].positionX++;
-    players[i].bullets[j].spriteX++;
+    if (metatile == METATILE_TRIGGER_ON)
+    {
+        metatile = METATILE_TRIGGER_OFF;
+        GSL_metatileUpdate();
+    }
+    else if (metatile == METATILE_TRIGGER_OFF)
+    {
+        metatile = METATILE_TRIGGER_ON;
+        GSL_metatileUpdate();
+        
+        // Decrement factory count and check if game is won
+        numFactories--;
+        if (numFactories == 0)
+        {
+            LoadEndScreen();
+        }
+    }
 }
