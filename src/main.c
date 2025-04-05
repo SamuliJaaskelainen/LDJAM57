@@ -76,6 +76,10 @@ void RenderSpritesUnsafe(void);
 #define START_WOLRD_OFFSET_X    768
 #define START_WOLRD_OFFSET_Y    832
 
+#define GAME_STATE_TITLE    0
+#define GAME_STATE_GAME     1
+#define GAME_STATE_END      2
+
 const unsigned char PLAYER_SPEED_DEFAULT =  2;
 const unsigned char PLAYER_SPEED_DIAGONAL = 1;
 
@@ -93,6 +97,10 @@ unsigned int keyStatus = 0;
 unsigned char playerTwoJoined = 0;
 
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
+
+// Gamestate and counters
+unsigned char gameState = GAME_STATE_GAME;
+unsigned char numFactories = 5; // when this reaches 0, game is won
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
@@ -157,14 +165,15 @@ void main(void)
 
     while(1)
     {
-        // Read gamepad
-        keyStatus = SMS_getKeysStatus();
-
-        // Player actions take n steps, 0 means new actions can be started
-        for(char i = 0; i < PLAYER_COUNT; ++i)
+        // Only process player actions if the game is in the playing state
+        if (gameState == GAME_STATE_GAME)
         {
-            if (players[i].actionCount == 0) UpdatePlayer(i);
-            if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
+            // Player actions take n steps, 0 means new actions can be started
+            for(char i = 0; i < PLAYER_COUNT; ++i)
+            {
+                if (players[i].actionCount == 0) UpdatePlayer(i);
+                if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
+            }
         }
 
         // Render (be extra careful if reordering)
@@ -714,9 +723,22 @@ void UpdateAction(char i)
 
 void MetatileInteraction(unsigned char *metatile)
 {
-    if (*metatile == METATILE_TRIGGER_OFF)
-	{
-		*metatile = METATILE_TRIGGER_ON;
-		GSL_metatileUpdate();
-	}
+
+    if (*metatile == METATILE_TRIGGER_ON)
+    {
+        *metatile = METATILE_TRIGGER_OFF;
+        GSL_metatileUpdate();
+    }
+    else if (*metatile == METATILE_TRIGGER_OFF)
+    {
+        *metatile = METATILE_TRIGGER_ON;
+        GSL_metatileUpdate();
+        
+        // Decrement factory count and check if game is won
+        numFactories--;
+        if (numFactories == 0)
+        {
+            gameState = 2; // Set game state to "won" (paused)
+        }
+    }
 }
