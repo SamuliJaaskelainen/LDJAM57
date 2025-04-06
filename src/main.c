@@ -50,7 +50,7 @@ char GetRightDownMetatile(char i);
 
 // Bullet Behavior
 void ShootBullet(char i);
-void ShootTurretBullet(char turretIndex);
+char ShootTurretBullet(char turretIndex);
 void UpdateBullets(char i);
 void MoveBulletUp(char i, char j);
 void MoveBulletDown(char i, char j);
@@ -1608,18 +1608,14 @@ void UpdateTurrets(void)
                     //char randomDir = (SMS_getKeysStatus() & 0x0F) % 8 + 1;
                     
                     // Try to shoot a bullet
-                    ShootTurretBullet(i);
-                    
-                    // Set bullet direction based on random value
-                    // Find a free bullet in the last bullet shot
-                    for (char j = 0; j < ENEMY_BULLET_COUNT; j++)
+                    char bulletIndex = ShootTurretBullet(i); 
+                    // If a bullet was successfully created
+                    if (bulletIndex >= 0)
                     {
-                        if (enemyBullets[j].isVisible)
-                        {
-                            enemyBullets[j].direction = DIRECTION_DOWN_RIGHT;
-                            break;
+                        // Set bullet direction (though we're already setting it in ShootTurretBullet now)
+                        enemyBullets[bulletIndex].direction = DIRECTION_DOWN_RIGHT;
                         }
-                    }
+                    
                 }
             }
             // Other firing modes will be implemented later
@@ -1627,7 +1623,7 @@ void UpdateTurrets(void)
     }
 }
 
-void ShootTurretBullet(char turretIndex)
+char ShootTurretBullet(char turretIndex)
 {
     // Look for a free enemy bullet
     for (char i = 0; i < ENEMY_BULLET_COUNT; i++)
@@ -1636,25 +1632,29 @@ void ShootTurretBullet(char turretIndex)
         {
             // Found a free bullet, initialize it
             enemyBullets[i].isVisible = 1;
-
-            // Store the absolute world coordinates
-                enemyBullets[i].positionX = turrets[turretIndex].positionX;
-                enemyBullets[i].positionY = turrets[turretIndex].positionY;
-                enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
-                enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
-
-            // Set default speed 
+            
+            // Store coordinates
+            enemyBullets[i].positionX = turrets[turretIndex].positionX + 8;
+            enemyBullets[i].positionY = turrets[turretIndex].positionY + 8;
+            enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
+            enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
+            
+            // Set default speed
             enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
-
-            // Check if bullet is actually visible on screen before playing sound
+            
+            // Set the direction DIRECTLY here
+            enemyBullets[i].direction = DIRECTION_DOWN_RIGHT;
+            
+            // Sound effect
             if (enemyBullets[i].spriteX >= 8 && enemyBullets[i].spriteX <= SCREEN_WIDTH - 8 &&
                 enemyBullets[i].spriteY >= 8 && enemyBullets[i].spriteY <= SCREEN_HEIGHT - 8)
             {
-                // Play sound effect - only if on screen
                 LoadAndPlaySFX(SFX_ENEMY_SHOOT);
             }
-
-            return;
+            
+            return i; // Return the index of the created bullet
         }
     }
+    
+    return -1; // Return -1 if no bullet was created
 }
