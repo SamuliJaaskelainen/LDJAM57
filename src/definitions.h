@@ -77,5 +77,11 @@
 
 // SFX
 #define SFX_EXPLOSION           0
+#define SFX_CONVERT             1
+#define SFX_CONVERT_FACTORY     2
+#define SFX_ENEMY_SHOOT         3
+#define SFX_MAP                 4
+#define SFX_ROAR                5
+#define SFX_PLAYER_SHOOT        6
 
 #endif /* DEFINITIONS_H */

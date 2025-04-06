@@ -112,6 +112,7 @@ unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 // Gamestate and counters
 unsigned char gameState = GAME_STATE_GAME;
 unsigned char numFactories = MAX_FACTORY_NUM; // when this reaches 0, game is won
+unsigned char menuButtonPressed = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
@@ -135,9 +136,7 @@ void main(void)
         switch (gameState)
         {
             case GAME_STATE_TITLE:
-                // Simple rendering for title screen - no scrolling needed
                 SMS_waitForVBlank();
-                //UNSAFE_SMS_copySpritestoSAT();
                 HandleTitleScreen();
                 break;
                 
@@ -155,9 +154,7 @@ void main(void)
                 break;
                 
             case GAME_STATE_END:
-                // Simple rendering for end screen - no scrolling needed
                 SMS_waitForVBlank();
-                //UNSAFE_SMS_copySpritestoSAT();
                 HandleEndScreen();
                 break;
         }
@@ -182,6 +179,36 @@ void LoadAndPlaySFX(char sfx)
             SMS_mapROMBank(explosion0_psg_bank);
             PSGSFXPlay(&explosion0_psg, SFX_CHANNEL3);
         break;
+
+        case SFX_CONVERT:
+            SMS_mapROMBank(convert_psg_bank);
+            PSGSFXPlay(&convert_psg, SFX_CHANNEL3);
+        break;
+
+        case SFX_CONVERT_FACTORY:
+            SMS_mapROMBank(convertfactory_psg_bank);
+            PSGSFXPlay(&convertfactory_psg, SFX_CHANNEL3);
+        break;
+
+        case SFX_ENEMY_SHOOT:
+            SMS_mapROMBank(enemyshoot0_psg_bank);
+            PSGSFXPlay(&enemyshoot0_psg, SFX_CHANNEL0);
+        break;
+
+        case SFX_MAP:
+            SMS_mapROMBank(map0_psg_bank);
+            PSGSFXPlay(&map0_psg, SFX_CHANNEL0);
+        break;
+
+        case SFX_ROAR:
+            SMS_mapROMBank(roar0_psg_bank);
+            PSGSFXPlay(&roar0_psg, SFX_CHANNEL0);
+        break;
+
+        case SFX_PLAYER_SHOOT:
+            SMS_mapROMBank(shoot0_psg_bank);
+            PSGSFXPlay(&shoot0_psg, SFX_CHANNEL0);
+        break;
     }
 }
 
@@ -191,16 +218,19 @@ void StopAllAudio(void)
     PSGSFXStop();
 }
 
-// title and end screen handling
 void LoadTitleScreen(void)
 {
+    gameState = GAME_STATE_TITLE;
     StopAllAudio();
 
-    gameState = GAME_STATE_TITLE;
-
-    // Clear the screen and load title graphics
+    // Setup VPD
+    SMS_VRAMmemsetW(0, 0, 0);
+    SMS_loadSpritePalette(black_palette_bin);
+    SMS_VDPturnOffFeature(VDPFEATURE_HIDEFIRSTCOL);
+    SMS_waitForVBlank();
     SMS_displayOff();
-    SMS_VRAMmemsetW(0, 0, 0x4000); // Clear VRAM
+    SMS_setBGScrollX(0);
+    SMS_setBGScrollY(0);
     
     // Load the title screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
@@ -208,22 +238,23 @@ void LoadTitleScreen(void)
     SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
     SMS_loadTileMap(0,0,&start_map_bin, start_map_bin_size);
     
-    // Reset scroll position
-    SMS_setBGScrollX(0);
-    SMS_setBGScrollY(0);
-    
+    // Loading complete, start display
     SMS_displayOn();
 }
 
 void LoadEndScreen(void)
 {
+    gameState = GAME_STATE_END;
     StopAllAudio();
 
-    gameState = GAME_STATE_END;
-
-    // Clear the screen and load end screen graphics
+    // Setup VPD
+    SMS_VRAMmemsetW(0, 0, 0);
+    SMS_loadSpritePalette(black_palette_bin);
+    SMS_VDPturnOffFeature(VDPFEATURE_HIDEFIRSTCOL);
+    SMS_waitForVBlank();
     SMS_displayOff();
-    SMS_VRAMmemsetW(0, 0, 0x4000); // Clear VRAM
+    SMS_setBGScrollX(0);
+    SMS_setBGScrollY(0);
     
     // Load the end screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
@@ -231,10 +262,7 @@ void LoadEndScreen(void)
     SMS_loadTiles(&end_tiles_bin, 0, end_tiles_bin_size);
     SMS_loadTileMap(0,0,&end_map_bin, end_map_bin_size);
     
-    // Reset scroll position
-    SMS_setBGScrollX(0);
-    SMS_setBGScrollY(0);
-    
+    // Loading complete, start display
     SMS_displayOn();
 }
 
@@ -258,7 +286,6 @@ void LoadGameScreen(void)
     SMS_loadTiles(&pollen_tiles_bin, 264, pollen_tiles_bin_size);
     SMS_mapROMBank(bullet_tiles_bin_bank);
     SMS_loadTiles(&bullet_tiles_bin, 268, bullet_tiles_bin_size);
-    SMS_displayOn();
 
     // Setup scrolltable
     SMS_mapROMBank(ugtbatch_scrolltable_bin_bank);
@@ -338,26 +365,46 @@ void LoadGameScreen(void)
 
     // Set bank for streaming tiles (should use same bank as audio)
     SMS_mapROMBank(player_tiles_bin_bank);
+
+    // Loading complete, start display
+    SMS_displayOn();
 }
 
 void HandleTitleScreen(void)
 {
-    // TODO: Prevent holding key 1 for direct skipping after end screen
-
-    // Check for player one action button to start game
-    if (keyStatus & PORT_A_KEY_1)
+    if(menuButtonPressed)
     {
-        LoadGameScreen();
+        if (!(keyStatus & PORT_A_KEY_1))
+        {
+            menuButtonPressed = 0;
+        }
+    }
+    else
+    {
+        if (keyStatus & PORT_A_KEY_1)
+        {
+            menuButtonPressed = 1;
+            LoadGameScreen();
+        }
     }
 }
 
 void HandleEndScreen(void)
 {
-    // Check for button press to return to title
-    if (keyStatus & PORT_A_KEY_1)
+    if(menuButtonPressed)
     {
-        gameState = GAME_STATE_TITLE;
-        LoadTitleScreen();
+        if (!(keyStatus & PORT_A_KEY_1))
+        {
+            menuButtonPressed = 0;
+        }
+    }
+    else
+    {
+        if (keyStatus & PORT_A_KEY_1)
+        {
+            menuButtonPressed = 1;
+            LoadTitleScreen();
+        }
     }
 }
 
@@ -366,24 +413,18 @@ void HandleGameScreen(void)
     // Scan for and activate turrets
     //ScanForTurrets();
 
-    // Shoot take n steps, 0 means new actions can be started
+    // Update all player related functions
     for(char i = 0; i < PLAYER_COUNT; ++i)
     {
+        // Shoot take n steps, 0 means new actions can be started
         if (players[i].actionCount == 0) UpdatePlayer(i);
         if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
         UpdatePlayerAnimations(i);
         UpdateBullets(i);
     }
+
+    // Update general functions
     UpdateEnemyBullets();
-    
-    if(sfxCountdown > 0)
-    {
-        sfxCountdown--;
-        if(sfxCountdown == 0)
-        {
-            LoadAndPlayMusic();
-        }
-    }
 }
 
 void RenderSprites(void)
@@ -948,17 +989,14 @@ void MetatileInteraction(unsigned char *metatile)
         if (numFactories == 0)
         {
             gameState = GAME_STATE_END;
-            LoadEndScreen();  // Load the end screen when game is won
-            
-            // TODO end screen song
-            // PSGPlay(&end_psg);
+            LoadEndScreen();
         }
     }
 }
 
 void Roar(char i)
 {
-    LoadAndPlaySFX(SFX_EXPLOSION);
+    LoadAndPlaySFX(SFX_ROAR);
 
     for(char j = 0; j < ENEMY_BULLET_COUNT; ++j)
     {
@@ -995,6 +1033,7 @@ void ShootBullet(char i)
                     players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DEFAULT;
                 break;
             }
+            LoadAndPlaySFX(SFX_PLAYER_SHOOT);
             return;
         }
     }
@@ -1103,6 +1142,7 @@ void MetatileFactoryHit(unsigned char *metatile)
         GSL_metatileUpdate();
         
         // Decrement factory count and check if game is won
+        LoadAndPlaySFX(SFX_CONVERT_FACTORY);
         numFactories--;
         if (numFactories == 0)
         {

@@ -13,3 +13,6 @@ extern const unsigned char	end_map_bin[1536];
 extern const unsigned char	startendpalette_pal_bin[16];
 #define				startendpalette_pal_bin_size 16
 #define				startendpalette_pal_bin_bank 2
+extern const unsigned char	black_palette_bin[17];
+#define				black_palette_bin_size 17
+#define				black_palette_bin_bank 2
