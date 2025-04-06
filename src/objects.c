@@ -1,4 +1,4 @@
-#define PLAYER_BULLET_COUNT 3
+#include "definitions.h"
 
 struct SpriteObject
 {
@@ -28,6 +28,17 @@ struct PlayerObject
     unsigned char inputHorizontal;
     struct SpriteObject bullets[PLAYER_BULLET_COUNT];
 };
+
+struct TurretInfo {
+    unsigned int positionX;
+    unsigned int positionY;
+    unsigned char isActive; // not active = flowery/destroyed
+    unsigned char shootTimer;
+    unsigned char isSmart;  // 0 = dumb, 1 = smart
+};
+
+// Array to track active turrets
+struct TurretInfo turrets[MAX_ACTIVE_TURRETS];
 
 void setSpriteAnimation(struct SpriteObject *spriteObject, const unsigned int *data)
 {

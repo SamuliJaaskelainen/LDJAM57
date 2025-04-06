@@ -5,6 +5,7 @@
 #include "..\banks\bank2.h"
 #include "..\banks\bank3.h"
 
+#include "definitions.h"
 #include "resources.c"
 #include "objects.c"
 
@@ -55,6 +56,14 @@ void MoveEnemyBulletDown(char i);
 void MoveEnemyBulletLeft(char i);
 void MoveEnemyBulletRight(char i);
 
+// Enemy AI
+//TODO
+//GetClosestPlayer
+//GetEnemyFireDirection
+//EnemyDumbShootAtPlayer
+//EnemySmartShootAtPlayer
+//ChooseSmartBulletTrajectory
+
 // Title and End Screen
 void LoadTitleScreen(void);
 void LoadEndScreen(void);
@@ -70,68 +79,6 @@ void RenderSpritesUnsafe(void);
 // Music and SFX handling 
 void LoadAndPlayMusic(void);
 void StopMusic(void);
-
-#define DIRECTION_NONE  	    0
-#define DIRECTION_UP 			1
-#define DIRECTION_DOWN 			2
-#define DIRECTION_LEFT  		3
-#define DIRECTION_RIGHT  		4
-#define DIRECTION_UP_LEFT		5
-#define DIRECTION_UP_RIGHT 		6
-#define DIRECTION_DOWN_LEFT  	7
-#define DIRECTION_DOWN_RIGHT  	8
-
-#define ACTION_STATIONARY 		0
-#define ACTION_ONE  			1
-#define ACTION_TWO  			2
-#define ACTION_MOVE  			3
-#define ACTION_STUN  			4
-
-// Metatile ids require updating every time the map is exported
-#define METATILE_TRIGGER_OFF    8
-#define METATILE_TRIGGER_ON     104
-#define METATILE_TURRET         0
-
-#define PLAYER_COUNT            2
-#define PLAYER_ONE              0
-#define PLAYER_TWO              1
-#define PLAYER_START_X          904
-#define PLAYER_START_Y          928
-#define PLAYER_SPRITE_START_X   136
-#define PLAYER_SPRITE_START_Y   96
-#define PLAYER_ACTION_FRAME_COUNT       15
-#define PLAYER_ACTION_INTERACTION_FRAME 14
-#define PLAYER_STUN_FRAME_COUNT         20
-#define PLAYER_COLLISION_VALUE  	    1
-#define PLAYER_ANIMATION_HOLD_DURATION  4
-
-// Screenspace defines
-#define SCREEN_WIDTH            256
-#define SCREEN_HEIGHT           192
-#define FONT_VRAM_OFFSET        320
-#define START_WOLRD_OFFSET_X    768
-#define START_WOLRD_OFFSET_Y    832
-
-// Game states
-#define GAME_STATE_TITLE    0
-#define GAME_STATE_GAME     1
-#define GAME_STATE_END      2
-
-// Game settings
-#define MAX_FACTORY_NUM 5
-
-// Enemies
-#define ENEMY_BULLET_COUNT          6
-#define ENEMY_BULLET_SPEED_DEFAULT  2
-
-const unsigned char PLAYER_SPEED_DEFAULT =  2;
-const unsigned char PLAYER_SPEED_DIAGONAL = 1;
-const unsigned char PLAYER_BULLET_SPEED_DEFAULT =  4;
-const unsigned char PLAYER_BULLET_SPEED_DIAGONAL = 2;
-
-const unsigned char SCREEN_EDGE_Y       = 96;
-const unsigned char SCREEN_EDGE_X_INNER = 120;
-const unsigned char SCREEN_EDGE_X_OUTER = 136;
 
 // Only Player One scrolls
 unsigned int scrollXTotal = 0;
