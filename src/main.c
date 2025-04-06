@@ -128,6 +128,7 @@ unsigned char menuButtonPressed = 0;
 unsigned char menuStartFlasher = 0;
 unsigned char menuStartVisible = 0;
 unsigned char playerStreamTurn = 0;
+unsigned char enemyBulletForCollisionUpdate = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
@@ -383,7 +384,7 @@ void LoadGameScreen(void)
         enemyBullets[i].spriteX = 0;
         enemyBullets[i].spriteY = 0;
         enemyBullets[i].isVisible = 0;
-        enemyBullets[i].size = 8;
+        enemyBullets[i].size = 14;
         enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
         enemyBullets[i].direction = DIRECTION_DOWN;
         enemyBullets[i].spriteOneIndex = 12;
@@ -1298,6 +1299,9 @@ void MoveEnemyBulletRight(char i)    { enemyBullets[i].positionX += enemyBullets
 
 void UpdateEnemyBullets(void)
 {
+    enemyBulletForCollisionUpdate++;
+    if(enemyBulletForCollisionUpdate == ENEMY_BULLET_COUNT) enemyBulletForCollisionUpdate = 0;
+
     for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
     {
         if(enemyBullets[i].isVisible)
@@ -1347,7 +1351,7 @@ void UpdateEnemyBullets(void)
             enemyBullets[i].spriteX -= scrollXThisFrame;
             enemyBullets[i].positionY -= scrollYThisFrame;
             enemyBullets[i].spriteY -= scrollYThisFrame;
-            
+
             // Check for off-screen
             if(enemyBullets[i].spriteY < 8
             || enemyBullets[i].spriteX < 8
@@ -1355,20 +1359,25 @@ void UpdateEnemyBullets(void)
             || enemyBullets[i].spriteX > SCREEN_WIDTH - 8)
             {
                 enemyBullets[i].isVisible = 0;
+                continue;
             }
-            
-            // Check collisions with players
-            for(char j = 0; j < PLAYER_COUNT; ++j)
+
+            // Check collisions with players, only one bullet collision check per frame
+            if(enemyBulletForCollisionUpdate == i)
             {
-                if(playersSprites[j].isVisible && players[j].action != ACTION_STUN)
+                for(char j = 0; j < PLAYER_COUNT; ++j)
                 {
-                    if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
+                    if(playersSprites[j].isVisible && players[j].action != ACTION_STUN)
                     {
-                        LoadAndPlaySFX(SFX_EXPLOSION);
-                        players[j].action = ACTION_STUN;
-                        players[j].actionCount = PLAYER_STUN_FRAME_COUNT;
-                        players[j].actionFrame = 99;
-                        enemyBullets[i].isVisible = 0;
+                        if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
+                        {
+                            LoadAndPlaySFX(SFX_EXPLOSION);
+                            players[j].action = ACTION_STUN;
+                            players[j].actionCount = PLAYER_STUN_FRAME_COUNT;
+                            players[j].actionFrame = 99;
+                            enemyBullets[i].isVisible = 0;
+                            continue;
+                        }
                     }
                 }
             }

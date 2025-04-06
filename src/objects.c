@@ -97,6 +97,23 @@ void setSpriteAnimation(struct SpriteObject *spriteObject, const unsigned int *d
 // Return 0 if no collision
 char spriteToSpriteCollision(struct SpriteObject *a, struct SpriteObject *b)
 {
+   unsigned char leftA = a->spriteX;
+   unsigned char rightA = a->spriteX + a->size;
+   unsigned char topA = a->spriteY;
+   unsigned char bottomA = a->spriteY + a->size;
+
+   unsigned char leftB = b->spriteX;
+   unsigned char rightB = b->spriteX + b->size;
+   unsigned char topB = b->spriteY;
+   unsigned char bottomB = b->spriteY + b->size;
+
+   if (rightA < leftB || leftA > rightB || bottomA < topB || topA > bottomB)  return 0;
+   else return 1;
+}
+
+// Return 0 if no collision
+char spriteToSpriteCollisionInt(struct SpriteObject *a, struct SpriteObject *b)
+{
    unsigned int leftA = a->positionX;
    unsigned int rightA = a->positionX + a->size;
    unsigned int topA = a->positionY;
