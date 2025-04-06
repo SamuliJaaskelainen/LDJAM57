@@ -20,6 +20,7 @@ void MoveDown(char i);
 void MoveLeft(char i);
 void MoveRight(char i);
 void UpdateAction(char i);
+void UpdateNumFactoriesSpriteIds(void);
 
 // Player blocking
 char IsPlayerUpBlocked(char i);
@@ -118,6 +119,8 @@ unsigned char turretScanCounter = 0;
 // Gamestate and counters
 unsigned char gameState = GAME_STATE_GAME;
 unsigned char numFactories = MAX_FACTORY_NUM; // when this reaches 0, game is won
+unsigned char numFactoriesSpriteIdOne = 0;
+unsigned char numFactoriesSpriteIdTwo = 0;
 unsigned char menuButtonPressed = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
@@ -292,6 +295,10 @@ void LoadGameScreen(void)
     SMS_loadTiles(&pollen_tiles_bin, 264, pollen_tiles_bin_size);
     SMS_mapROMBank(bullet_tiles_bin_bank);
     SMS_loadTiles(&bullet_tiles_bin, 268, bullet_tiles_bin_size);
+    SMS_mapROMBank(factory_tiles_bin_bank);
+    SMS_loadTiles(&factory_tiles_bin, 270, factory_tiles_bin_size);
+    SMS_mapROMBank(spritenumbers_tiles_bin_bank);
+    SMS_loadTiles(&spritenumbers_tiles_bin, 274, spritenumbers_tiles_bin_size);
 
     // Setup scrolltable
     SMS_mapROMBank(ugtbatch_scrolltable_bin_bank);
@@ -363,6 +370,7 @@ void LoadGameScreen(void)
     numFactories = MAX_FACTORY_NUM;
     playerTwoJoined = 0;
     endCounter = 0;
+    UpdateNumFactoriesSpriteIds();
 
     // Initialize turrets
     InitTurrets();
@@ -467,6 +475,42 @@ void RenderSprites(void)
         {
             SMS_addSprite(enemyBullets[j].spriteX - 4, enemyBullets[j].spriteY - 4, enemyBullets[j].spriteOneIndex);
         }
+    }
+
+    // Render UI, shared between players
+    SMS_addSprite(UI_X, UI_Y, 270);
+    SMS_addSprite(UI_X + 8, UI_Y, 272);
+
+    if(numFactories > 9)
+    {
+        SMS_addSprite(UI_X + 17, UI_Y, numFactoriesSpriteIdOne);
+        SMS_addSprite(UI_X + 25,UI_Y, numFactoriesSpriteIdTwo);
+    }
+    else
+    {
+        SMS_addSprite(UI_X + 17, UI_Y, numFactoriesSpriteIdOne);
+    }
+}
+
+void UpdateNumFactoriesSpriteIds(void)
+{
+    if(numFactories > 9)
+    {
+        // Split tens and ones
+        unsigned char digits[2] = {0,0};
+        unsigned char splitter = numFactories;
+        while (splitter >= 10)
+        {
+            splitter -= 10;
+            digits[0]++;
+        }
+        digits[1] = splitter;
+        numFactoriesSpriteIdOne = 274 + (digits[0] << 1);
+        numFactoriesSpriteIdTwo = 274 + (digits[1] << 1);
+    }
+    else
+    {
+        numFactoriesSpriteIdOne = 274 + (numFactories << 1);
     }
 }
 
@@ -1149,6 +1193,7 @@ void MetatileFactoryHit(unsigned char *metatile)
         {
             endCounter = 60;
         }
+        UpdateNumFactoriesSpriteIds();
     }
 }
 

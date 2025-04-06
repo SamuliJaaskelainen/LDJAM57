@@ -55,6 +55,8 @@
 #define PLAYER_SPEED_DIAGONAL           1
 #define PLAYER_BULLET_SPEED_DEFAULT     4
 #define PLAYER_BULLET_SPEED_DIAGONAL    2
+#define UI_X                            183
+#define UI_Y                            156
 
 // Screen Space Defines
 #define SCREEN_WIDTH            256

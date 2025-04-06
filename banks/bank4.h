@@ -13,6 +13,12 @@ extern const unsigned char	pollen_tiles_bin[128];
 extern const unsigned char	bullet_tiles_bin[64];
 #define				bullet_tiles_bin_size 64
 #define				bullet_tiles_bin_bank 4
+extern const unsigned char	spritenumbers_tiles_bin[640];
+#define				spritenumbers_tiles_bin_size 640
+#define				spritenumbers_tiles_bin_bank 4
+extern const unsigned char	factory_tiles_bin[128];
+#define				factory_tiles_bin_size 128
+#define				factory_tiles_bin_bank 4
 extern const unsigned char	ugtbatch_scrolltable_bin[4109];
 #define				ugtbatch_scrolltable_bin_size 4109
 #define				ugtbatch_scrolltable_bin_bank 4
