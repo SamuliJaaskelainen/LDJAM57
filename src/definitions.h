@@ -65,7 +65,7 @@
 #define ENEMY_BULLET_COUNT          6
 #define ENEMY_BULLET_SPEED_DEFAULT  2
 #define MAX_ACTIVE_TURRETS          8
-#define TURRET_SHOOT_RATE           60
+#define TURRET_SHOOT_RATE           120
 
 // Enemy Type Defines
 #define ENEMY_TYPE_BASIC        0
