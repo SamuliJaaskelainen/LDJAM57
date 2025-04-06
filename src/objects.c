@@ -48,15 +48,8 @@ unsigned char sectorCount = 0;
 // Stores information for turret activation and shooting calculations
 struct TurretInfo {
     // Absolute position (needed for shooting calculations)
-    // Absolute position (needed for shooting calculations)
     unsigned int positionX;
     unsigned int positionY;
-    
-    // Sector information
-    unsigned char sector_x;
-    unsigned char sector_y;
-    unsigned char rel_x;      // Relative position within sector (0-255)
-    unsigned char rel_y;      // Relative position within sector (0-255)
     
     // State
     unsigned char isActive;   // 1 if currently active (shooting), 0 otherwise
