@@ -1166,3 +1166,94 @@ void UpdateEnemyBullets(void)
         }
     }
 }
+
+/// Enemy AI Logic Start
+// Returns index of closest player (0 or 1) to given position
+// If player two is not active, always returns 0
+char GetClosestPlayer(unsigned int posX, unsigned int posY) {
+    if (!playerTwoJoined) return PLAYER_ONE;
+    
+    // Calculate Manhattan distance to player one
+    int distX1 = playersSprites[PLAYER_ONE].positionX > posX ? 
+                 playersSprites[PLAYER_ONE].positionX - posX : 
+                 posX - playersSprites[PLAYER_ONE].positionX;
+                 
+    int distY1 = playersSprites[PLAYER_ONE].positionY > posY ? 
+                 playersSprites[PLAYER_ONE].positionY - posY : 
+                 posY - playersSprites[PLAYER_ONE].positionY;
+    
+    int totalDist1 = distX1 + distY1;
+    
+    // Calculate distance to player two
+    int distX2 = playersSprites[PLAYER_TWO].positionX > posX ? 
+                 playersSprites[PLAYER_TWO].positionX - posX : 
+                 posX - playersSprites[PLAYER_TWO].positionX;
+                 
+    int distY2 = playersSprites[PLAYER_TWO].positionY > posY ? 
+                 playersSprites[PLAYER_TWO].positionY - posY : 
+                 posY - playersSprites[PLAYER_TWO].positionY;
+    
+    int totalDist2 = distX2 + distY2;
+    
+    // Return index of closest player
+    return (totalDist1 <= totalDist2) ? PLAYER_ONE : PLAYER_TWO;
+}
+
+// Lookup table for direction based on angle octants
+// Maps from 0-7 to DIRECTION_UP, DIRECTION_UP_RIGHT, etc.
+const unsigned char directionLookup[8] = {
+    DIRECTION_RIGHT,
+    DIRECTION_UP_RIGHT,
+    DIRECTION_UP,
+    DIRECTION_UP_LEFT,
+    DIRECTION_LEFT,
+    DIRECTION_DOWN_LEFT,
+    DIRECTION_DOWN,
+    DIRECTION_DOWN_RIGHT
+};
+
+// Determines which of 8 directions to fire in to aim at a target
+// Returns DIRECTION_* value
+char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
+                          unsigned int targetX, unsigned int targetY) {
+    
+    // Calculate deltas
+    int deltaX = targetX - sourceX;
+    int deltaY = targetY - sourceY;
+    
+    // Determine octant (0-7) based on deltas
+    // Using bit shift for multiplication/division by 2
+    char octant = 0;
+    
+    // Check if mostly vertical
+    if (abs_delta(deltaY) > abs_delta(deltaX)) {
+        // Vertical axis dominant
+        octant = (deltaY < 0) ? 2 : 6;  // Up or Down
+        
+        // Adjust for diagonal
+        if (deltaX < 0) octant += 1;    // Left diagonal
+        else if (deltaX > 0) octant -= 1; // Right diagonal
+    }
+    else {
+        // Horizontal axis dominant
+        octant = (deltaX < 0) ? 4 : 0;  // Left or Right
+        
+        // Adjust for diagonal
+        if (deltaY < 0) octant -= 1;    // Up diagonal
+        else if (deltaY > 0) octant += 1; // Down diagonal
+        
+        // Handle wrap-around
+        if (octant < 0) octant += 8;
+        if (octant >= 8) octant -= 8;
+    }
+    
+    // Look up the direction from the table
+    return directionLookup[octant];
+}
+
+// gets absolute value
+int abs_delta(int delta) {
+    return (delta < 0) ? -delta : delta;
+}
+
+/// Enemy AI Logic End

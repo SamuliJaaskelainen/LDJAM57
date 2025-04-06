@@ -32,9 +32,10 @@ struct PlayerObject
 struct TurretInfo {
     unsigned int positionX;
     unsigned int positionY;
-    unsigned char isActive; // not active = flowery/destroyed
+    unsigned char isActive; // not active = not shooting
+    unsigned char isDestroyed; // determines if it's pollenated and permanently inactive
     unsigned char shootTimer;
-    unsigned char isSmart;  // 0 = dumb, 1 = smart
+    unsigned char fireMode;  // 0 = random direction, 1 = shoot at player current location, 2 = shoot ahead of player's current position
 };
 
 // Array to track active turrets
