@@ -127,6 +127,7 @@ unsigned char numFactoriesSpriteIdTwo = 0;
 unsigned char menuButtonPressed = 0;
 unsigned char menuStartFlasher = 0;
 unsigned char menuStartVisible = 0;
+unsigned char playerStreamTurn = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
@@ -351,7 +352,7 @@ void LoadGameScreen(void)
         setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
         playersSprites[i].direction = DIRECTION_DOWN;
         players[i].ramDataAddress = i == 0 ? 8192 : 8320;
-        playersSprites[i].spriteOneIndex = (i << 2);
+        playersSprites[i].spriteOneIndex = i << 2;
         playersSprites[i].spriteTwoIndex = 2 + (i << 2);
         players[i].action = ACTION_STATIONARY;
         players[i].actionCount = 0;
@@ -575,10 +576,15 @@ void UpdateNumFactoriesSpriteIds(void)
 
 void RenderSpritesUnsafe(void)
 {
-    for(char i = 0; i< PLAYER_COUNT; ++i)
+    if(playerTwoJoined)
     {
-        if(!playersSprites[i].isVisible) return;
-        UNSAFE_SMS_VRAMmemcpy128(players[i].ramDataAddress, &player_tiles_bin[playersSprites[i].animationFrameData[playersSprites[i].currentAnimationFrame]]);
+        if(playerStreamTurn > 1) playerStreamTurn = 0;
+        UNSAFE_SMS_VRAMmemcpy128(players[playerStreamTurn].ramDataAddress, &player_tiles_bin[playersSprites[playerStreamTurn].animationFrameData[playersSprites[playerStreamTurn].currentAnimationFrame]]);
+        playerStreamTurn++;
+    }
+    else
+    {
+        UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_ONE].animationFrameData[playersSprites[PLAYER_ONE].currentAnimationFrame]]);
     }
 }
 
