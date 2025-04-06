@@ -583,13 +583,25 @@ void RenderSpritesUnsafe(void)
 {
     if(playerTwoJoined)
     {
-        if(playerStreamTurn > 1) playerStreamTurn = 0;
-        UNSAFE_SMS_VRAMmemcpy128(players[playerStreamTurn].ramDataAddress, &player_tiles_bin[playersSprites[playerStreamTurn].animationFrameData[playersSprites[playerStreamTurn].currentAnimationFrame]]);
+        if(playerStreamTurn == 4)
+        {
+            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_ONE].animationFrameData[playersSprites[PLAYER_ONE].currentAnimationFrame]]);
+        }
+        else if(playerStreamTurn == 8)
+        {
+            playerStreamTurn = 0;
+            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_TWO].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_TWO].animationFrameData[playersSprites[PLAYER_TWO].currentAnimationFrame]]);
+        }
         playerStreamTurn++;
     }
     else
     {
-        UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_ONE].animationFrameData[playersSprites[PLAYER_ONE].currentAnimationFrame]]);
+        if(playerStreamTurn == 8)
+        {
+            playerStreamTurn = 0;
+            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_ONE].animationFrameData[playersSprites[PLAYER_ONE].currentAnimationFrame]]);
+        }
+        playerStreamTurn++;
     }
 }
 
@@ -669,8 +681,8 @@ void UpdatePlayer(char i)
     players[i].inputHorizontal = DIRECTION_NONE;
     players[i].action = ACTION_STATIONARY;
 
-    // TSpawn second player if they have not joined
-    if(i == PLAYER_TWO && !playerTwoJoined)
+    // Spawn second player if they have not joined
+    if(!playerTwoJoined && i == PLAYER_TWO)
     {
         if ((keyStatus & PORT_B_KEY_1) || (keyStatus & PORT_B_KEY_2))
         {
@@ -681,7 +693,7 @@ void UpdatePlayer(char i)
             playersSprites[1].spriteX = playersSprites[0].spriteX;
             playersSprites[1].spriteY = playersSprites[0].spriteY;
         }
-        //return; TODO: Enable this later
+        return;
     }
 
     if(i == PLAYER_ONE)
@@ -1238,6 +1250,7 @@ void UpdateBullets(char i)
             || players[i].bullets[j].spriteX > SCREEN_WIDTH - 8)
             {
                 players[i].bullets[j].isVisible = 0;
+                continue;
             }
 
             // Player bullet collision to metatiles
@@ -1246,6 +1259,7 @@ void UpdateBullets(char i)
             {
                 MetatileFactoryHit(metatile);
                 players[i].bullets[j].isVisible = 0;
+                continue;
             }
             else if(*metatile == METATILE_TURRET)
             {
@@ -1258,17 +1272,15 @@ void UpdateBullets(char i)
                         LoadAndPlaySFX(SFX_EXPLOSION);
                     }
                 }
-
                 players[i].bullets[j].isVisible = 0;
+                continue;
             }
             else if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
             {
                 // Hit wall!
                 players[i].bullets[j].isVisible = 0;
+                continue;
             }
-
-            // Player bullet collision to enemy sprites
-            // TODO
         }
     }
 }
@@ -1579,7 +1591,7 @@ void CheckTurretsInBoundingBox(void)
     
     // Check a batch of turrets per frame (e.g., 2-3) for better responsiveness
     unsigned char checkCount = 0;
-    unsigned char maxChecksPerFrame = 3;
+    unsigned char maxChecksPerFrame = 1;
     
     while (checkCount < maxChecksPerFrame && turretCheckIndex < MAX_ACTIVE_TURRETS)
     {
@@ -1630,13 +1642,13 @@ void UpdateTurrets(void)
             turrets[i].shootTimer++;
             
             // Check if it's time to shoot
-            if (turrets[i].shootTimer >= TURRET_SHOOT_RATE)
+            if (turrets[i].shootTimer > TURRET_SHOOT_RATE)
             {
                 // Reset timer
                 turrets[i].shootTimer = 0;
                 
                 // Determine direction based on fire mode
-                char direction;
+                char direction = DIRECTION_DOWN;
                 
                 switch (turrets[i].fireMode)
                 {
