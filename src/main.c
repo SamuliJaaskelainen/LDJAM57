@@ -106,6 +106,7 @@ unsigned char bulletShootDir = 1;
 
 unsigned int keyStatus = 0;
 unsigned char playerTwoJoined = 0;
+unsigned char endCounter = 0;
 
 // Copy of the map in ram
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
@@ -360,6 +361,7 @@ void LoadGameScreen(void)
     // Reset game progress variables
     numFactories = MAX_FACTORY_NUM;
     playerTwoJoined = 0;
+    endCounter = 0;
 
     // Initialize turrets
     InitTurrets();
@@ -414,7 +416,6 @@ void HandleEndScreen(void)
 
 void HandleGameScreen(void)
 {
-
     // Update all player related functions
     for(char i = 0; i < PLAYER_COUNT; ++i)
     {
@@ -427,6 +428,14 @@ void HandleGameScreen(void)
 
     // Update general functions
     UpdateEnemyBullets();
+    if(endCounter > 0)
+    {
+        endCounter--;
+        if(endCounter == 0)
+        {
+            LoadEndScreen();
+        }
+    }
 }
 
 void RenderSprites(void)
@@ -973,28 +982,6 @@ void UpdateAction(char i)
     }
 }
 
-// Modify your MetatileInteraction function to load the end screen
-void MetatileInteraction(unsigned char *metatile)
-{
-    if (*metatile == METATILE_TRIGGER_ON)
-    {
-        *metatile = METATILE_TRIGGER_OFF;
-        GSL_metatileUpdate();
-    }
-    else if (*metatile == METATILE_TRIGGER_OFF)
-    {
-        *metatile = METATILE_TRIGGER_ON;
-        GSL_metatileUpdate();
-        
-        // Decrement factory count and check if game is won
-        numFactories--;
-        if (numFactories == 0)
-        {
-            gameState = GAME_STATE_END;
-            LoadEndScreen();
-        }
-    }
-}
 
 void Roar(char i)
 {
@@ -1108,18 +1095,19 @@ void UpdateBullets(char i)
             }
 
             // Player bullet collision to metatiles
-            unsigned char metatile = *GSL_metatileLookup(players[i].bullets[j].positionX, players[i].bullets[j].positionY);
-            if(metatile == METATILE_TRIGGER_OFF || metatile == METATILE_TRIGGER_ON)
+            unsigned char *metatile;
+            metatile = GSL_metatileLookup(players[i].bullets[j].positionX, players[i].bullets[j].positionY);
+            if(*metatile == METATILE_TRIGGER_OFF || *metatile == METATILE_TRIGGER_ON)
             {
                 MetatileFactoryHit(metatile);
                 players[i].bullets[j].isVisible = 0;
             }
-            else if(metatile == METATILE_TURRET)
+            else if(*metatile == METATILE_TURRET)
             {
                 // TODO: Hit turret!
                 players[i].bullets[j].isVisible = 0;
             }
-            else if(metatilesMetaLUT[metatile] & PLAYER_COLLISION_VALUE == 1)
+            else if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
             {
                 // Hit wall!
                 players[i].bullets[j].isVisible = 0;
@@ -1133,14 +1121,9 @@ void UpdateBullets(char i)
 
 void MetatileFactoryHit(unsigned char *metatile)
 {
-    if (metatile == METATILE_TRIGGER_ON)
+    if (*metatile == METATILE_TRIGGER_OFF)
     {
-        metatile = METATILE_TRIGGER_OFF;
-        GSL_metatileUpdate();
-    }
-    else if (metatile == METATILE_TRIGGER_OFF)
-    {
-        metatile = METATILE_TRIGGER_ON;
+        *metatile = METATILE_TRIGGER_ON;
         GSL_metatileUpdate();
         
         // Decrement factory count and check if game is won
@@ -1148,7 +1131,7 @@ void MetatileFactoryHit(unsigned char *metatile)
         numFactories--;
         if (numFactories == 0)
         {
-            LoadEndScreen();
+            endCounter = 60;
         }
     }
 }
