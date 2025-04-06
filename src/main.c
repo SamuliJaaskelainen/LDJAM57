@@ -50,7 +50,7 @@ char GetRightDownMetatile(char i);
 
 // Bullet Behavior
 void ShootBullet(char i);
-char ShootTurretBullet(char turretIndex);
+char ShootTurretBullet(char turretIndex, char direction);
 void UpdateBullets(char i);
 void MoveBulletUp(char i, char j);
 void MoveBulletDown(char i, char j);
@@ -73,8 +73,10 @@ char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY,
                           unsigned int targetX, unsigned int targetY);
 void CheckTurretsInBoundingBox(void);
 void UpdateTurrets(void);
+
 // Helper Functions
 int abs_delta(int delta);
+char RandomDirection(void);
 
 // Title and End Screen
 void LoadTitleScreen(void);
@@ -113,8 +115,9 @@ unsigned char endCounter = 0;
 // Copy of the map in ram
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 
-// Turret Scanning
+// Turret Scanning and Bullet Behavior
 unsigned char turretCheckIndex = 0;
+unsigned char lastRandomDirection = 0;
 
 // Gamestate and counters
 unsigned char gameState = GAME_STATE_GAME;
@@ -1594,36 +1597,49 @@ void UpdateTurrets(void)
             // Increment shoot timer
             turrets[i].shootTimer++;
             
-            // Check if it's time to shoot based on fire mode
-            if (turrets[i].fireMode == 0)
+            // Check if it's time to shoot
+            if (turrets[i].shootTimer >= TURRET_SHOOT_RATE)
             {
-                // Random firing mode
-                // Shoot every 32 frames
-                if (turrets[i].shootTimer >= 32)
+                // Reset timer
+                turrets[i].shootTimer = 0;
+                
+                // Determine direction based on fire mode
+                char direction;
+                
+                switch (turrets[i].fireMode)
                 {
-                    // Reset timer
-                    turrets[i].shootTimer = 0;
-                    
-                    // Generate a random direction (1-8)
-                    //char randomDir = (SMS_getKeysStatus() & 0x0F) % 8 + 1;
-                    
-                    // Try to shoot a bullet
-                    char bulletIndex = ShootTurretBullet(i); 
-                    // If a bullet was successfully created
-                    if (bulletIndex >= 0)
-                    {
-                        // Set bullet direction (though we're already setting it in ShootTurretBullet now)
-                        enemyBullets[bulletIndex].direction = DIRECTION_DOWN_RIGHT;
+                    case 0: // Random firing mode
+                        direction = RandomDirection();
+                        break;
+                        
+                    case 1: // Player-targeted mode
+                        {
+                            // Get the closest player
+                            char playerIndex = GetClosestPlayer(turrets[i].positionX, turrets[i].positionY);
+                            
+                            // Calculate direction to that player
+                            direction = GetEnemyFireDirection(
+                                turrets[i].positionX, 
+                                turrets[i].positionY,
+                                playersSprites[playerIndex].positionX, 
+                                playersSprites[playerIndex].positionY
+                            );
                         }
-                    
+                        break;
+                        
+                    default: // Fallback to random
+                        direction = RandomDirection();
+                        break;
                 }
+                
+                // Try to shoot a bullet
+                ShootTurretBullet(i, direction);
             }
-            // Other firing modes will be implemented later
         }
     }
 }
 
-char ShootTurretBullet(char turretIndex)
+char ShootTurretBullet(char turretIndex, char direction)
 {
     // Look for a free enemy bullet
     for (char i = 0; i < ENEMY_BULLET_COUNT; i++)
@@ -1639,13 +1655,18 @@ char ShootTurretBullet(char turretIndex)
             enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
             enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
             
-            // Set default speed
-            enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+            // Set default speed based on direction (diagonal is slower)
+            if (direction == DIRECTION_UP_LEFT || direction == DIRECTION_UP_RIGHT || 
+                direction == DIRECTION_DOWN_LEFT || direction == DIRECTION_DOWN_RIGHT) {
+                enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT / 2;
+            } else {
+                enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+            }
             
-            // Set the direction DIRECTLY here
-            enemyBullets[i].direction = DIRECTION_DOWN_RIGHT;
+            // Set the direction from the parameter
+            enemyBullets[i].direction = direction;
             
-            // Sound effect
+            // Sound effect if on screen
             if (enemyBullets[i].spriteX >= 8 && enemyBullets[i].spriteX <= SCREEN_WIDTH - 8 &&
                 enemyBullets[i].spriteY >= 8 && enemyBullets[i].spriteY <= SCREEN_HEIGHT - 8)
             {
@@ -1657,4 +1678,48 @@ char ShootTurretBullet(char turretIndex)
     }
     
     return -1; // Return -1 if no bullet was created
+}
+
+// Helper function to get a random direction (1-8), should not return same direction twice in a row
+char RandomDirection(void) 
+{
+    // Create a pseudo-random value using multiple dynamic values
+    unsigned int randomValue = (keyStatus & 0xFF)                // Controller input
+                             + (scrollXTotal & 0xFF)             // World position X
+                             + ((scrollYTotal & 0xFF) << 2)      // World position Y (shifted)
+                             + (turretCheckIndex & 0x0F)         // Which turret is being checked
+                             + (bulletShootTimer & 0x07)         // Bullet timer
+                             + (sfxCountdown & 0x03)             // Sound effect timer
+                             + (numFactories & 0x07)             // Remaining factories
+                             + (menuStartFlasher & 0x0F)         // Menu animation state
+                             + (players[0].actionCount & 0x1F)   // Player 1 action state
+                             + (players[1].actionCount & 0x1F);  // Player 2 action state
+    
+    // Further mix the bits
+    randomValue = (randomValue ^ (randomValue >> 4)) + (randomValue << 3);
+    
+    // Determine whether to increase or decrease (get bit 0)
+    char increase = randomValue & 0x01;
+    
+    // Get a new direction
+    char newDirection;
+    
+    if (lastRandomDirection == 0) {
+        // First call - just get a random direction
+        newDirection = ((randomValue >> 2) & 0x07) + 1;
+    } else {
+        // Subsequent calls - modify previous direction
+        if (increase) {
+            // Increase direction (wrap around from 8 to 1)
+            newDirection = (lastRandomDirection == 8) ? 1 : lastRandomDirection + 1;
+        } else {
+            // Decrease direction (wrap around from 1 to 8)
+            newDirection = (lastRandomDirection == 1) ? 8 : lastRandomDirection - 1;
+        }
+    }
+    
+    // Store this direction for next time
+    lastRandomDirection = newDirection;
+    
+    return newDirection;
 }
