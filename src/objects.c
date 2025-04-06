@@ -76,7 +76,7 @@ struct TilePair {
 
 // Array of walkable tile pairs - add all tile pairs here
 const struct TilePair walkableTilePairs[MAX_TILE_PAIRS] = {
-    {8, 104},    // Example: Normal ground = 8, Flowered ground = 104
+    {METATILE_GRASS, METATILE_FLOWERS},    // Example: Normal ground = 8, Flowered ground = 104
     {56, 112},   // Example: Another tile type
     // Add more tile pairs as needed
 };

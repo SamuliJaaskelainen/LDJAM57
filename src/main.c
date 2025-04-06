@@ -32,6 +32,7 @@ char IsPlayerDownLeftBlocked(char i);
 char IsPlayerDownRightBlocked(char i);
 
 // Metatiles
+void MetatileSteppedOn(unsigned char *metatile);
 void MetatileFactoryHit(unsigned char * metatile);
 char GetTopLeftMetatile(char i);
 char GetTopRightMetatile(char i);
@@ -695,6 +696,22 @@ void UpdatePlayer(char i)
 
         // Move player
         for(char j = 0; j < playersSprites[i].speed; ++j) MovePlayer(i);  //MovePlayerNoCollision(i); 
+
+        // Check metatile stepped on
+        unsigned char *metatile = GSL_metatileLookup(playersSprites[i].positionX, playersSprites[i].positionY);
+        MetatileSteppedOn(metatile);
+    }
+}
+
+void MetatileSteppedOn(unsigned char *metatile)
+{
+    for(char i  = 0; i < MAX_TILE_PAIRS; ++i)
+    {
+        if (*metatile == walkableTilePairs[0].normalTile)
+        {
+            *metatile = walkableTilePairs[0].flowerTile;
+            GSL_metatileUpdate();
+        }
     }
 }
 
@@ -1095,9 +1112,8 @@ void UpdateBullets(char i)
             }
 
             // Player bullet collision to metatiles
-            unsigned char *metatile;
-            metatile = GSL_metatileLookup(players[i].bullets[j].positionX, players[i].bullets[j].positionY);
-            if(*metatile == METATILE_TRIGGER_OFF || *metatile == METATILE_TRIGGER_ON)
+            unsigned char *metatile = GSL_metatileLookup(players[i].bullets[j].positionX, players[i].bullets[j].positionY);
+            if(*metatile == METATILE_FACTORY || *metatile == METATILE_FACTORY_CLAIMED)
             {
                 MetatileFactoryHit(metatile);
                 players[i].bullets[j].isVisible = 0;
@@ -1121,9 +1137,9 @@ void UpdateBullets(char i)
 
 void MetatileFactoryHit(unsigned char *metatile)
 {
-    if (*metatile == METATILE_TRIGGER_OFF)
+    if (*metatile == METATILE_FACTORY)
     {
-        *metatile = METATILE_TRIGGER_ON;
+        *metatile = METATILE_FACTORY_CLAIMED;
         GSL_metatileUpdate();
         
         // Decrement factory count and check if game is won

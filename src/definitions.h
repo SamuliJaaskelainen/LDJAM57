@@ -20,17 +20,19 @@
 #define ACTION_STUN  			4
 
 // Metatile Defines (update these when map is exported)
-#define METATILE_TRIGGER_OFF    26
-#define METATILE_TRIGGER_ON     50
-#define METATILE_TURRET         17
-#define METATILE_TURRET_DEAD    3
+#define METATILE_FACTORY            26
+#define METATILE_FACTORY_CLAIMED    50
+#define METATILE_TURRET             17
+#define METATILE_TURRET_DEAD        3
+#define METATILE_GRASS              105
+#define METATILE_FLOWERS            234
 
 // Map Data
-#define SECTOR_SIZE 256        // Size in pixels for subdividing the map into sectors
-#define MAX_SECTORS 16 // 1024x1024 map becomes 4x4 sectors
+#define SECTOR_SIZE             256 // Size in pixels for subdividing the map into sectors
+#define MAX_SECTORS             16 // 1024x1024 map becomes 4x4 sectors
 #define MAX_FACTORY_NUM         5
-#define MAX_TILE_PAIRS 2 // currently just for testing factory and turret
-#define MAX_TURRETS_PER_SECTOR 8
+#define MAX_TILE_PAIRS          2 // currently just for testing factory and turret
+#define MAX_TURRETS_PER_SECTOR  8
 
 
 // Player Defines
@@ -48,11 +50,11 @@
 #define PLAYER_STUN_FRAME_COUNT         20
 #define PLAYER_COLLISION_VALUE  	    1
 #define PLAYER_ANIMATION_HOLD_DURATION  4
-#define PLAYER_BULLET_COUNT     3
-#define PLAYER_SPEED_DEFAULT    2
-#define PLAYER_SPEED_DIAGONAL   1
-#define PLAYER_BULLET_SPEED_DEFAULT 4
-#define PLAYER_BULLET_SPEED_DIAGONAL 2
+#define PLAYER_BULLET_COUNT             3
+#define PLAYER_SPEED_DEFAULT            2
+#define PLAYER_SPEED_DIAGONAL           1
+#define PLAYER_BULLET_SPEED_DEFAULT     4
+#define PLAYER_BULLET_SPEED_DIAGONAL    2
 
 // Screen Space Defines
 #define SCREEN_WIDTH            256
@@ -74,7 +76,7 @@
 #define ENEMY_BULLET_SPEED_DEFAULT  2
 #define MAX_ACTIVE_TURRETS          8
 #define TURRET_SHOOT_RATE           120
-#define TURRET_SCAN_INTERVAL 60  // Scan every 60 frames
+#define TURRET_SCAN_INTERVAL        60  // Scan every 60 frames
 
 // Constants for the player's bounding box
 #define ACTIVATION_BOX_HALF_WIDTH  128  // Half-width of activation area
