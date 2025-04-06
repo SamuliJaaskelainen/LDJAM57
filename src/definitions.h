@@ -73,4 +73,7 @@
 #define ENEMY_TYPE_ADVANCED     1
 #define ENEMY_TYPE_RANDOM       2
 
+// SFX
+#define SFX_EXPLOSION           0
+
 #endif /* DEFINITIONS_H */

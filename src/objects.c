@@ -67,6 +67,6 @@ char spriteToSpriteCollision(struct SpriteObject *a, struct SpriteObject *b)
    unsigned int topB = b->positionY;
    unsigned int bottomB = b->positionY + b->size;
 
-   if (rightA <= leftB || leftA >= rightB || bottomA <= topB || topA >= bottomB)  return 0;
+   if (rightA < leftB || leftA > rightB || bottomA < topB || topA > bottomB)  return 0;
    else return 1;
 }

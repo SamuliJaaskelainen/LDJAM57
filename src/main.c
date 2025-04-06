@@ -84,7 +84,10 @@ void RenderSpritesUnsafe(void);
 
 // Music and SFX handling 
 void LoadAndPlayMusic(void);
-void StopMusic(void);
+void LoadAndPlaySFX(char sfx);
+void StopAllAudio(void);
+unsigned char musicResumePosition = 0;
+unsigned char sfxCountdown = 0;
 
 // Only Player One scrolls
 unsigned int scrollXTotal = 0;
@@ -157,25 +160,37 @@ void main(void)
         
         // Play audio
         PSGFrame();
+        PSGSFXFrame();
     }
 }
 
 void LoadAndPlayMusic(void) 
 {
-    // switch to bank that has music
     SMS_mapROMBank(kaijulove_psg_bank);
     PSGPlay(&kaijulove_psg);
 }
 
-void StopMusic(void)
+void LoadAndPlaySFX(char sfx)
+{   
+    switch(sfx)
+    {
+        case SFX_EXPLOSION:
+            SMS_mapROMBank(explosion0_psg_bank);
+            PSGSFXPlay(&explosion0_psg, SFX_CHANNEL3);
+        break;
+    }
+}
+
+void StopAllAudio(void)
 {
     PSGStop();
+    PSGSFXStop();
 }
 
 // title and end screen handling
 void LoadTitleScreen(void)
 {
-    StopMusic();
+    StopAllAudio();
 
     gameState = GAME_STATE_TITLE;
 
@@ -198,7 +213,7 @@ void LoadTitleScreen(void)
 
 void LoadEndScreen(void)
 {
-    StopMusic();
+    StopAllAudio();
 
     gameState = GAME_STATE_END;
 
@@ -355,6 +370,15 @@ void HandleGameScreen(void)
         UpdatePlayerAnimations(i);
         UpdateBullets(i);
         UpdateEnemyBullets();
+    }
+    
+    if(sfxCountdown > 0)
+    {
+        sfxCountdown--;
+        if(sfxCountdown == 0)
+        {
+            LoadAndPlayMusic();
+        }
     }
 }
 
@@ -610,7 +634,7 @@ void UpdatePlayer(char i)
         }
 
         // Move player
-        for(char j = 0; j < playersSprites[i].speed; ++j) MovePlayer(i); //MovePlayerNoCollision(i);
+        for(char j = 0; j < playersSprites[i].speed; ++j) MovePlayer(i);  //MovePlayerNoCollision(i); 
     }
 }
 
@@ -889,7 +913,7 @@ void UpdateAction(char i)
     {
         if(players[i].action == ACTION_ONE)
         {
-            //PSGSFXPlay(&explosion0_psg, SFX_CHANNEL3);
+            LoadAndPlaySFX(SFX_EXPLOSION);
         }
         else if(players[i].action == ACTION_TWO)
         {
@@ -955,10 +979,10 @@ void ShootBullet(char i)
     }
 }
 
-void MoveBulletUp(char i, char j)       { players[i].bullets[j].positionY--; players[i].bullets[j].spriteY--; }
-void MoveBulletDown(char i, char j)     { players[i].bullets[j].positionY++; players[i].bullets[j].spriteY++; }
-void MoveBulletLeft(char i, char j)     { players[i].bullets[j].positionX--; players[i].bullets[j].spriteX--; }
-void MoveBulletRight(char i, char j)    { players[i].bullets[j].positionX++; players[i].bullets[j].spriteX++; }
+void MoveBulletUp(char i, char j)       { players[i].bullets[j].positionY -= players[i].bullets[j].speed; players[i].bullets[j].spriteY -= players[i].bullets[j].speed; }
+void MoveBulletDown(char i, char j)     { players[i].bullets[j].positionY += players[i].bullets[j].speed; players[i].bullets[j].spriteY += players[i].bullets[j].speed; }
+void MoveBulletLeft(char i, char j)     { players[i].bullets[j].positionX -= players[i].bullets[j].speed; players[i].bullets[j].spriteX -= players[i].bullets[j].speed; }
+void MoveBulletRight(char i, char j)    { players[i].bullets[j].positionX += players[i].bullets[j].speed; players[i].bullets[j].spriteX += players[i].bullets[j].speed; }
 
 void UpdateBullets(char i)
 {
@@ -966,47 +990,44 @@ void UpdateBullets(char i)
     {
         if(players[i].bullets[j].isVisible)
         {
-            // Move bullets based on speed and direction
-            for(char k = 0; k < players[i].bullets[j].speed; ++k)
+            // Move bullets based on and direction
+            switch (players[i].bullets[j].direction)
             {
-                switch (players[i].bullets[j].direction)
-                {
-                    case DIRECTION_UP:
-                        MoveBulletUp(i, j);
-                    break;
+                case DIRECTION_UP:
+                    MoveBulletUp(i, j);
+                break;
 
-                    case DIRECTION_DOWN:
-                        MoveBulletDown(i, j);
-                    break;
+                case DIRECTION_DOWN:
+                    MoveBulletDown(i, j);
+                break;
 
-                    case DIRECTION_LEFT:
-                        MoveBulletLeft(i, j);
-                    break;
+                case DIRECTION_LEFT:
+                    MoveBulletLeft(i, j);
+                break;
 
-                    case DIRECTION_RIGHT:
-                        MoveBulletRight(i, j);
-                    break;
+                case DIRECTION_RIGHT:
+                    MoveBulletRight(i, j);
+                break;
 
-                    case DIRECTION_UP_LEFT:
-                        MoveBulletUp(i, j);
-                        MoveBulletLeft(i, j);
-                    break;
+                case DIRECTION_UP_LEFT:
+                    MoveBulletUp(i, j);
+                    MoveBulletLeft(i, j);
+                break;
 
-                    case DIRECTION_UP_RIGHT:
-                        MoveBulletUp(i, j);
-                        MoveBulletRight(i, j);
-                    break;
+                case DIRECTION_UP_RIGHT:
+                    MoveBulletUp(i, j);
+                    MoveBulletRight(i, j);
+                break;
 
-                    case DIRECTION_DOWN_LEFT:
-                        MoveBulletDown(i, j);
-                        MoveBulletLeft(i, j);
-                    break;
+                case DIRECTION_DOWN_LEFT:
+                    MoveBulletDown(i, j);
+                    MoveBulletLeft(i, j);
+                break;
 
-                    case DIRECTION_DOWN_RIGHT:
-                        MoveBulletDown(i, j);
-                        MoveBulletRight(i, j);
-                    break;
-                }
+                case DIRECTION_DOWN_RIGHT:
+                    MoveBulletDown(i, j);
+                    MoveBulletRight(i, j);
+                break;
             }
 
             // Apply scrolling
@@ -1168,6 +1189,7 @@ void UpdateEnemyBullets(void)
                 {
                     if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
                     {
+                        LoadAndPlaySFX(SFX_EXPLOSION);
                         players[j].action = ACTION_STUN;
                         players[j].actionCount = PLAYER_STUN_FRAME_COUNT;
                         enemyBullets[i].isVisible = 0;
