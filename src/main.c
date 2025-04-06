@@ -400,6 +400,10 @@ void LoadGameScreen(void)
     ScanMapForTurrets();
     InitTurrets();
 
+    // Reload sprite palette after loading flicker animation
+    SMS_mapROMBank(spritepalette_pal_bin_bank);
+    SMS_loadSpritePalette(&spritepalette_pal_bin);
+
     // Init audio & play music
     LoadAndPlayMusic();
 
@@ -1510,9 +1514,21 @@ void ScanMapForTurrets(void)
         turrets[i].isDestroyed = 0;
     }
     
+    // Color to animate loading
+    char color = 0; 
+    char colorChangeCounter = 0;
+
     // Loop through the entire map in metatile steps
     for (unsigned int y = 0; y < mapHeight; y += 8)
     {
+        colorChangeCounter++;
+        if(colorChangeCounter > 15)
+        {
+            color++;
+            SMS_setColor(color);
+            SMS_setNextSpriteColoratIndex(0);
+        }
+
         for (unsigned int x = 0; x < mapWidth; x += 8)
         {
             // Get the metatile at this position
