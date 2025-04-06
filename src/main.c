@@ -4,7 +4,7 @@
 
 #include "..\banks\bank2.h"
 #include "..\banks\bank3.h"
-//#include "..\banks\bank4.h"
+#include "..\banks\bank4.h"
 
 #include "definitions.h"
 #include "resources.c"
@@ -315,7 +315,7 @@ void LoadGameScreen(void)
     //InitTurrets();
 
     // Init audio & play music
-    //LoadAndPlayMusic();
+    LoadAndPlayMusic();
 
     // Set bank for streaming tiles (should use same bank as audio)
     SMS_mapROMBank(player_tiles_bin_bank);

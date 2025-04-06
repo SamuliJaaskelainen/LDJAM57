@@ -13,9 +13,3 @@ extern const unsigned char	end_map_bin[1536];
 extern const unsigned char	startendpalette_pal_bin[16];
 #define				startendpalette_pal_bin_size 16
 #define				startendpalette_pal_bin_bank 2
-extern const unsigned char	kaijulove_psg[3087];
-#define				kaijulove_psg_size 3087
-#define				kaijulove_psg_bank 2
-extern const unsigned char	explosion0_psg[83];
-#define				explosion0_psg_size 83
-#define				explosion0_psg_bank 2
