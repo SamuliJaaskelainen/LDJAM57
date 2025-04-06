@@ -271,7 +271,7 @@ void LoadGameScreen(void)
     gameState = GAME_STATE_GAME;
 
     // Init audio & play music
-    LoadAndPlayMusic();
+    //LoadAndPlayMusic();
 
     // Setup VDP
     SMS_displayOff();
