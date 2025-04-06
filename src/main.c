@@ -1619,8 +1619,8 @@ void ShootTurretBullet(char turretIndex)
             enemyBullets[i].isVisible = 1;
 
             // Store the absolute world coordinates
-                enemyBullets[i].positionX = turrets[turretIndex].positionX;
-                enemyBullets[i].positionY = turrets[turretIndex].positionY;
+                enemyBullets[i].positionX = turrets[turretIndex].positionX + 8; // 8 offset to get the center of the tile
+                enemyBullets[i].positionY = turrets[turretIndex].positionY + 8; // 8 offset to get the center of the tile
                 enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
                 enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
 
