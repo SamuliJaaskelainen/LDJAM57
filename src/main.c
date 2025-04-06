@@ -4,7 +4,7 @@
 
 #include "..\banks\bank2.h"
 #include "..\banks\bank3.h"
-#include "..\banks\bank4.h"
+//#include "..\banks\bank4.h"
 
 #include "resources.c"
 #include "objects.c"
@@ -89,9 +89,10 @@ void StopMusic(void);
 #define ACTION_STUN  			4
 
 // Metatile ids require updating every time the map is exported
-#define METATILE_TRIGGER_OFF    8
-#define METATILE_TRIGGER_ON     104
-#define METATILE_TURRET         0
+#define METATILE_TRIGGER_OFF    26
+#define METATILE_TRIGGER_ON     50
+#define METATILE_TURRET         17
+#define METATILE_TURRET_DEAD    3
 
 #define PLAYER_COUNT            2
 #define PLAYER_ONE              0
@@ -360,7 +361,7 @@ void LoadGameScreen(void)
     playerTwoJoined = 0;
 
     // Init audio & play music
-    LoadAndPlayMusic();
+    //LoadAndPlayMusic();
 
     // Set bank for streaming tiles (should use same bank as audio)
     SMS_mapROMBank(player_tiles_bin_bank);
