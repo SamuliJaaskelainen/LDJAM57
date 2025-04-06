@@ -63,13 +63,14 @@ void Roar(char i);
 
 // Enemy AI
 void InitTurrets(void);
+void ScanMapForTurrets(void);
 void ActivateTurretAt(unsigned int posX, unsigned int posY, unsigned char mode);
 char GetClosestPlayer(unsigned int posX, unsigned int posY);
 char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
                           unsigned int targetX, unsigned int targetY);
-
-void ScanForTurrents(void);
-
+void CheckTurretsInBoundingBox(void);
+void ActivateTurretsInSector(char sectorIndex, char sectorX, char sectorY);
+void UpdateTurrets(void);
 // Helper Functions
 int abs_delta(int delta);
 
@@ -108,6 +109,9 @@ unsigned char playerTwoJoined = 0;
 
 // Copy of the map in ram
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
+
+// Turret Scanning
+unsigned char turretScanCounter = 0;
 
 // Gamestate and counters
 unsigned char gameState = GAME_STATE_GAME;
@@ -358,7 +362,7 @@ void LoadGameScreen(void)
     playerTwoJoined = 0;
 
     // Initialize turrets
-    //InitTurrets();
+    InitTurrets();
 
     // Init audio & play music
     LoadAndPlayMusic();
@@ -410,8 +414,6 @@ void HandleEndScreen(void)
 
 void HandleGameScreen(void)
 {
-    // Scan for and activate turrets
-    //ScanForTurrets();
 
     // Update all player related functions
     for(char i = 0; i < PLAYER_COUNT; ++i)
@@ -1156,98 +1158,74 @@ void MoveEnemyBulletDown(char i)     { enemyBullets[i].positionY += enemyBullets
 void MoveEnemyBulletLeft(char i)     { enemyBullets[i].positionX -= enemyBullets[i].speed; enemyBullets[i].spriteX -= enemyBullets[i].speed; }
 void MoveEnemyBulletRight(char i)    { enemyBullets[i].positionX += enemyBullets[i].speed; enemyBullets[i].spriteX += enemyBullets[i].speed; }
 
-void UpdateEnemyBullets(void)
-{
-    // DEBUG BULLET SHOOT STARTS
-    bulletShootTimer++;
-    if(bulletShootTimer > bulletShootRate)
-    {
-        bulletShootTimer = 0;
 
-        for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
-        {
-            if(!enemyBullets[i].isVisible)
-            {
-                enemyBullets[i].isVisible = 1;
-                enemyBullets[i].positionX = playersSprites[PLAYER_ONE].positionX - 64;
-                enemyBullets[i].positionY = playersSprites[PLAYER_ONE].positionY - 64;
-                enemyBullets[i].spriteX = playersSprites[PLAYER_ONE].spriteX - 64;
-                enemyBullets[i].spriteY = playersSprites[PLAYER_ONE].spriteY - 64;
-                enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
-                enemyBullets[i].direction = bulletShootDir;
-                bulletShootDir++;
-                if(bulletShootDir > 8) bulletShootDir = 1;
-                break;
-            }
-        }
-    }
-    // DEBUG BULLET SHOOT ENDS
-
-    for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
-    {
-        if(enemyBullets[i].isVisible)
-        {
-            switch (enemyBullets[i].direction)
-            {
+void UpdateEnemyBullets(void) {
+    // check active turrets first
+    //UpdateTurrets();
+    
+    for(char i = 0; i < ENEMY_BULLET_COUNT; ++i) {
+        if(enemyBullets[i].isVisible) {
+            // Movement code for bullets
+            switch (enemyBullets[i].direction) {
                 case DIRECTION_UP:
                     MoveEnemyBulletUp(i);
                 break;
-
+                
                 case DIRECTION_DOWN:
                     MoveEnemyBulletDown(i);
                 break;
-
+                
                 case DIRECTION_LEFT:
                     MoveEnemyBulletLeft(i);
                 break;
-
+                
                 case DIRECTION_RIGHT:
                     MoveEnemyBulletRight(i);
                 break;
-
+                
                 case DIRECTION_UP_LEFT:
                     MoveEnemyBulletUp(i);
                     MoveEnemyBulletLeft(i);
                 break;
-
+                
                 case DIRECTION_UP_RIGHT:
                     MoveEnemyBulletUp(i);
                     MoveEnemyBulletRight(i);
                 break;
-
+                
                 case DIRECTION_DOWN_LEFT:
                     MoveEnemyBulletDown(i);
                     MoveEnemyBulletLeft(i);
                 break;
-
+                
                 case DIRECTION_DOWN_RIGHT:
                     MoveEnemyBulletDown(i);
                     MoveEnemyBulletRight(i);
                 break;
             }
-
-            // Apply scrolling
+            
+            // Apply scrolling (unchanged)
+            
+            // Apply scrolling (unchanged)
             enemyBullets[i].positionX -= scrollXThisFrame;
             enemyBullets[i].spriteX -= scrollXThisFrame;
             enemyBullets[i].positionY -= scrollYThisFrame;
             enemyBullets[i].spriteY -= scrollYThisFrame;
-
-            // Destory bullets off screen
+            
+            // Check for off-screen (unchanged)
+            
+            // Check for off-screen (unchanged)
             if(enemyBullets[i].spriteY < 8
             || enemyBullets[i].spriteX < 8
             || enemyBullets[i].spriteY > SCREEN_HEIGHT - 8
-            || enemyBullets[i].spriteX > SCREEN_WIDTH - 8)
-            {
+            || enemyBullets[i].spriteX > SCREEN_WIDTH - 8) {
                 enemyBullets[i].isVisible = 0;
             }
-
-             // Check collisions to players
-             for(char j = 0; j < PLAYER_COUNT; ++j)
-            {
-                if(playersSprites[j].isVisible)
-                {
-                    if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
-                    {
+            
+            // Check collisions with players (unchanged)
+            for(char j = 0; j < PLAYER_COUNT; ++j) {
+                if(playersSprites[j].isVisible) {
+                    if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i])) {
                         LoadAndPlaySFX(SFX_EXPLOSION);
                         players[j].action = ACTION_STUN;
                         players[j].actionCount = PLAYER_STUN_FRAME_COUNT;
@@ -1258,6 +1236,10 @@ void UpdateEnemyBullets(void)
         }
     }
 }
+
+
+
+
 
 /// Enemy AI Logic Start
 
@@ -1270,22 +1252,10 @@ void InitTurrets(void) {
         // Default to random shooting
         turrets[i].fireMode = 0;
     }
+    
+    // Scan the entire map and populate turret sectors
+    ScanMapForTurrets();
 }
-
-void ActivateTurretAt(unsigned int posX, unsigned int posY, unsigned char mode) {
-    // Find an inactive turret slot
-    for(char i = 0; i < MAX_ACTIVE_TURRETS; ++i) {
-        if(!turrets[i].isActive && !turrets[i].isDestroyed) {
-            turrets[i].positionX = posX;
-            turrets[i].positionY = posY;
-            turrets[i].isActive = 1;
-            turrets[i].shootTimer = 0;
-            turrets[i].fireMode = mode;
-            return;
-        }
-    }
-}
-
 
 
 // Returns index of closest player (0 or 1) to given position
@@ -1376,86 +1346,275 @@ int abs_delta(int delta) {
     return (delta < 0) ? -delta : delta;
 }
 
-void ShootTurretBullet(char turretIndex) {
-    // Find the first available enemy bullet
-    for(char i = 0; i < ENEMY_BULLET_COUNT; ++i) {
-        if(!enemyBullets[i].isVisible) {
-            // Position bullet at turret location
-            enemyBullets[i].positionX = turrets[turretIndex].positionX;
-            enemyBullets[i].positionY = turrets[turretIndex].positionY;
-            enemyBullets[i].spriteX = turrets[turretIndex].positionX - scrollXTotal + 128;
-            enemyBullets[i].spriteY = turrets[turretIndex].positionY - scrollYTotal + 96;
-            enemyBullets[i].isVisible = 1;
-            enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
-            
-            // Determine direction based on fireMode
-            if(turrets[turretIndex].fireMode == 0) {
-                // Random direction (1-8)
-                // Use a simple counter for "randomness" - avoid actual random functions
-                static unsigned char pseudoRandom = 0;
-                pseudoRandom = (pseudoRandom + 1) & 0x07; // Quick mod 8 using bitwise AND
-                enemyBullets[i].direction = pseudoRandom + 1; // Convert to 1-8 range
-            } 
-            else if(turrets[turretIndex].fireMode == 1) {
-                // Aim at closest player
-                char playerIndex = GetClosestPlayer(turrets[turretIndex].positionX, 
-                                                    turrets[turretIndex].positionY);
-                                                    
-                enemyBullets[i].direction = GetEnemyFireDirection(
-                    turrets[turretIndex].positionX, 
-                    turrets[turretIndex].positionY,
-                    playersSprites[playerIndex].positionX,
-                    playersSprites[playerIndex].positionY
-                );
-            }
-            
-            // Adjust speed for diagonal directions
-            if(enemyBullets[i].direction == DIRECTION_UP_LEFT ||
-               enemyBullets[i].direction == DIRECTION_UP_RIGHT ||
-               enemyBullets[i].direction == DIRECTION_DOWN_LEFT ||
-               enemyBullets[i].direction == DIRECTION_DOWN_RIGHT) {
-                enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT >> 1; // Divide by 2 using bit shift
-            }
-            
-            return;
-        }
-    }
-}
-
-void ScanForTurrets(void) {
-    // Define viewport bounds with a small buffer
-    unsigned int minX = scrollXTotal - 32;
-    unsigned int maxX = scrollXTotal + SCREEN_WIDTH + 32;
-    unsigned int minY = scrollYTotal - 32;
-    unsigned int maxY = scrollYTotal + SCREEN_HEIGHT + 32;
+// Scan the entire map for turrets and store them in sectors
+void ScanMapForTurrets(void) {
+    unsigned int mapWidth = GSL_getMapWidthInPixels();
+    unsigned int mapHeight = GSL_getMapHeightInPixels();
     
-    // Scan visible tiles on a grid (every 16 pixels)
-    for(unsigned int x = minX & 0xFFF0; x < maxX; x += 16) {
-        for(unsigned int y = minY & 0xFFF0; y < maxY; y += 16) {
-            // Check if tile is a turret
+    // Reset sector data
+    sectorCount = 0;
+    for (unsigned char i = 0; i < MAX_SECTORS; i++) {
+        turretSectors[i].count = 0;
+    }
+    
+    // Scan the map in tile-sized (16 pixel) increments to save time
+    for (unsigned int y = 0; y < mapHeight; y += 16) {
+        for (unsigned int x = 0; x < mapWidth; x += 16) {
+            // Check if this tile is a turret
             unsigned char metatile = *GSL_metatileLookup(x, y);
-            if(metatile == METATILE_TURRET) {
-                // Check if this turret is already active
-                char alreadyActive = 0;
-                for(char i = 0; i < MAX_ACTIVE_TURRETS; ++i) {
-                    if(turrets[i].isActive && 
-                       turrets[i].positionX >> 4 == x >> 4 && 
-                       turrets[i].positionY >> 4 == y >> 4) {
-                        alreadyActive = 1;
+            if (metatile == METATILE_TURRET) {
+                // Calculate sector coordinates
+                unsigned char sx = x >> 8;  // Divide by 256
+                unsigned char sy = y >> 8;
+                
+                // Calculate relative position within sector
+                unsigned char rx = x & 0xFF;  // Modulo 256
+                unsigned char ry = y & 0xFF;
+                
+                // Look for an existing sector or create a new one
+                char sectorIndex = -1;
+                
+                // Check if this sector already exists
+                for (unsigned char i = 0; i < sectorCount; i++) {
+                    if (turretSectors[i].sector_x == sx && 
+                        turretSectors[i].sector_y == sy) {
+                        sectorIndex = i;
                         break;
                     }
                 }
                 
-                // If not active, activate it
-                if(!alreadyActive) {
-                    // Randomize between fireMode 0 and 1
-                    static unsigned char modeSelector = 0;
-                    modeSelector = (modeSelector + 1) & 0x01; // Toggle between 0 and 1
-                    ActivateTurretAt(x, y, modeSelector);
+                // If sector doesn't exist, create a new one
+                if (sectorIndex == -1) {
+                    // Check if we have room for a new sector
+                    if (sectorCount >= MAX_SECTORS) {
+                        // Too many sectors, skip this turret
+                        continue;
+                    }
+                    
+                    sectorIndex = sectorCount;
+                    turretSectors[sectorIndex].sector_x = sx;
+                    turretSectors[sectorIndex].sector_y = sy;
+                    turretSectors[sectorIndex].count = 0;
+                    sectorCount++;
+                }
+                
+                // Check if sector has room for another turret
+                if (turretSectors[sectorIndex].count >= MAX_TURRETS_PER_SECTOR) {
+                    // Sector full, skip this turret
+                    continue;
+                }
+                
+                // Add turret to sector
+                unsigned char tIndex = turretSectors[sectorIndex].count;
+                turretSectors[sectorIndex].turrets[tIndex].rel_x = rx;
+                turretSectors[sectorIndex].turrets[tIndex].rel_y = ry;
+                turretSectors[sectorIndex].turrets[tIndex].mode = 0; // Default to random
+                turretSectors[sectorIndex].count++;
+                
+                // Also initialize the TurretInfo in the global array
+                // Find a free slot
+                for (unsigned char t = 0; t < MAX_ACTIVE_TURRETS; t++) {
+                    if (!turrets[t].isActive && !turrets[t].isDestroyed) {
+                        // Calculate absolute position
+                        turrets[t].positionX = (sx << 8) + rx;
+                        turrets[t].positionY = (sy << 8) + ry;
+                        turrets[t].sector_x = sx;
+                        turrets[t].sector_y = sy;
+                        turrets[t].rel_x = rx;
+                        turrets[t].rel_y = ry;
+                        turrets[t].isActive = 0;
+                        turrets[t].isDestroyed = 0;
+                        turrets[t].shootTimer = 0;
+                        turrets[t].fireMode = 0; // Default to random
+                        
+                        // Alternate between firing modes for variety
+                        static unsigned char modeSelector = 0;
+                        modeSelector = (modeSelector + 1) & 0x01; // Toggle between 0 and 1
+                        turrets[t].fireMode = modeSelector;
+                        
+                        break;
+                    }
                 }
             }
         }
     }
 }
 
+// Check turrets in bounding box around player 1
+void CheckTurretsInBoundingBox(void) {
+    // Use scrolling total as basis for calculations to avoid large numbers
+    unsigned char playerSectorX = (scrollXTotal >> 8); 
+    unsigned char playerSectorY = (scrollYTotal >> 8);
+    
+    // Calculate relative position within the sector
+    unsigned char playerRelX = scrollXTotal & 0xFF;
+    unsigned char playerRelY = scrollYTotal & 0xFF;
+    
+    // First, deactivate all turrets
+    for (char i = 0; i < MAX_ACTIVE_TURRETS; i++) {
+        if (turrets[i].isActive && !turrets[i].isDestroyed) {
+            turrets[i].isActive = 0;
+        }
+    }
+    
+    // Determine which sectors to check based on the player's position within their sector
+    char leftSectorOffset = (playerRelX < ACTIVATION_BOX_HALF_WIDTH) ? -1 : 0;
+    char rightSectorOffset = (playerRelX + ACTIVATION_BOX_HALF_WIDTH > 255) ? 1 : 0;
+    char topSectorOffset = (playerRelY < ACTIVATION_BOX_HALF_HEIGHT) ? -1 : 0;
+    char bottomSectorOffset = (playerRelY + ACTIVATION_BOX_HALF_HEIGHT > 255) ? 1 : 0;
+    
+    // Check each potentially overlapping sector
+    for (char sxOffset = leftSectorOffset; sxOffset <= rightSectorOffset; sxOffset++) {
+        for (char syOffset = topSectorOffset; syOffset <= bottomSectorOffset; syOffset++) {
+            // Calculate the sector to check (with bounds checking)
+            char checkSectorX = playerSectorX + sxOffset;
+            char checkSectorY = playerSectorY + syOffset;
+            
+            // Skip if sector would be negative (unsigned char would wrap)
+            if ((sxOffset < 0 && playerSectorX == 0) || 
+                (syOffset < 0 && playerSectorY == 0)) {
+                continue;
+            }
+            
+            // Find this sector in our list
+            for (char s = 0; s < sectorCount; s++) {
+                if (turretSectors[s].sector_x == checkSectorX && 
+                    turretSectors[s].sector_y == checkSectorY) {
+                    
+                    // Process turrets in this sector
+                    ActivateTurretsInSector(s, checkSectorX, checkSectorY);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+
+// Activates turrets in a sector if they're within the bounding box
+void ActivateTurretsInSector(char sectorIndex, char sectorX, char sectorY) {
+    // Get player's position for bounding box calculations
+    unsigned char playerSectorX = (scrollXTotal >> 8);
+    unsigned char playerSectorY = (scrollYTotal >> 8);
+    unsigned char playerRelX = scrollXTotal & 0xFF;
+    unsigned char playerRelY = scrollYTotal & 0xFF;
+    
+    // Calculate bounding box limits within this sector's space
+    char boxLeft, boxRight, boxTop, boxBottom;
+    
+    // Handle sector offsets properly
+    if (sectorX < playerSectorX) {
+        // We're in the sector to the left of the player
+        boxLeft = 0;
+        boxRight = ACTIVATION_BOX_HALF_WIDTH - (1 + playerRelX);
+    } else if (sectorX > playerSectorX) {
+        // We're in the sector to the right of the player
+        boxLeft = 256 - ACTIVATION_BOX_HALF_WIDTH + (255 - playerRelX);
+        boxRight = 255;
+    } else {
+        // Same X sector as player
+        boxLeft = playerRelX - ACTIVATION_BOX_HALF_WIDTH;
+        boxRight = playerRelX + ACTIVATION_BOX_HALF_WIDTH;
+        
+        // Handle underflow/overflow within the sector
+        if (boxLeft > playerRelX) boxLeft = 0;  // Underflow check
+        if (boxRight < playerRelX) boxRight = 255;  // Overflow check
+    }
+    
+    // Similar logic for Y bounds
+    if (sectorY < playerSectorY) {
+        boxTop = 0;
+        boxBottom = ACTIVATION_BOX_HALF_HEIGHT - (1 + playerRelY);
+    } else if (sectorY > playerSectorY) {
+        boxTop = 256 - ACTIVATION_BOX_HALF_HEIGHT + (255 - playerRelY);
+        boxBottom = 255;
+    } else {
+        boxTop = playerRelY - ACTIVATION_BOX_HALF_HEIGHT;
+        boxBottom = playerRelY + ACTIVATION_BOX_HALF_HEIGHT;
+        
+        if (boxTop > playerRelY) boxTop = 0;  // Underflow check
+        if (boxBottom < playerRelY) boxBottom = 255;  // Overflow check
+    }
+    
+    // Check all turrets in this sector
+    for (char t = 0; t < turretSectors[sectorIndex].count; t++) {
+        char turretRelX = turretSectors[sectorIndex].turrets[t].rel_x;
+        char turretRelY = turretSectors[sectorIndex].turrets[t].rel_y;
+        
+        // Check if turret is in bounding box
+        if (turretRelX >= boxLeft && turretRelX <= boxRight &&
+            turretRelY >= boxTop && turretRelY <= boxBottom) {
+            
+            // Find this turret in the global array and activate it
+            for (char i = 0; i < MAX_ACTIVE_TURRETS; i++) {
+                if (!turrets[i].isDestroyed && 
+                    turrets[i].sector_x == sectorX && 
+                    turrets[i].sector_y == sectorY &&
+                    turrets[i].rel_x == turretRelX && 
+                    turrets[i].rel_y == turretRelY) {
+                    
+                    turrets[i].isActive = 1;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+// Update turrets - called each frame
+void UpdateTurrets(void) {
+    // Update which turrets should be active
+    CheckTurretsInBoundingBox();
+    
+    // Process active turrets
+    for (char i = 0; i < MAX_ACTIVE_TURRETS; i++) {
+        if (turrets[i].isActive && !turrets[i].isDestroyed) {
+            // Update shoot timer
+            turrets[i].shootTimer++;
+            
+            // Check if it's time to shoot
+            if (turrets[i].shootTimer >= TURRET_SHOOT_RATE) {
+                turrets[i].shootTimer = 0;
+                
+                // Shoot bullet
+                ShootTurretBullet(i);
+            }
+        }
+    }
+}
+
+// Makes a turret shoot a bullet (8-bit optimized version)
+void ShootTurretBullet(char turretIndex) {
+    // Find an available enemy bullet
+    for (char i = 0; i < ENEMY_BULLET_COUNT; i++) {
+        if (!enemyBullets[i].isVisible) {
+            // Position bullet at turret location
+            unsigned int turretPosX = (turrets[turretIndex].sector_x << 8) | turrets[turretIndex].rel_x;
+            unsigned int turretPosY = (turrets[turretIndex].sector_y << 8) | turrets[turretIndex].rel_y;
+            
+            enemyBullets[i].positionX = turretPosX;
+            enemyBullets[i].positionY = turretPosY;
+            
+            // Convert to screen coordinates
+            enemyBullets[i].spriteX = (turretPosX - scrollXTotal) + 128;
+            enemyBullets[i].spriteY = (turretPosY - scrollYTotal) + 96;
+            
+            enemyBullets[i].isVisible = 1;
+            enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+            
+            // Random direction (1-8) using counter for pseudo-randomness
+            static unsigned char pseudoRandom = 0;
+            pseudoRandom = (pseudoRandom + 1) & 0x07; // Quick mod 8 with bitwise AND
+            enemyBullets[i].direction = pseudoRandom + 1; // Convert to 1-8 range
+            
+            // Adjust speed for diagonal directions with bit-shift (divide by 2)
+            if (enemyBullets[i].direction >= DIRECTION_UP_LEFT) {
+                enemyBullets[i].speed = enemyBullets[i].speed >> 1;
+            }
+            
+            return; // Found a bullet slot, exit
+        }
+    }
+    // No available bullet slots
+}
 /// Enemy AI Logic End

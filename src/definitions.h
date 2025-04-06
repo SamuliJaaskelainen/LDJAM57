@@ -25,6 +25,14 @@
 #define METATILE_TURRET         17
 #define METATILE_TURRET_DEAD    3
 
+// Map Data
+#define SECTOR_SIZE 256        // Size in pixels for subdividing the map into sectors
+#define MAX_SECTORS 16 // 1024x1024 map becomes 4x4 sectors
+#define MAX_FACTORY_NUM         5
+#define MAX_TILE_PAIRS 2 // currently just for testing factory and turret
+#define MAX_TURRETS_PER_SECTOR 8
+
+
 // Player Defines
 #define PLAYER_COUNT            2
 #define PLAYER_ONE              0
@@ -61,14 +69,17 @@
 #define GAME_STATE_GAME         1
 #define GAME_STATE_END          2
 
-// Game Settings
-#define MAX_FACTORY_NUM         5
-
 // Enemy Defines
 #define ENEMY_BULLET_COUNT          6
 #define ENEMY_BULLET_SPEED_DEFAULT  2
 #define MAX_ACTIVE_TURRETS          8
 #define TURRET_SHOOT_RATE           120
+#define TURRET_SCAN_INTERVAL 60  // Scan every 60 frames
+
+// Constants for the player's bounding box
+#define ACTIVATION_BOX_HALF_WIDTH  128  // Half-width of activation area
+#define ACTIVATION_BOX_HALF_HEIGHT 96   // Half-height of activation area
+
 
 // Enemy Type Defines
 #define ENEMY_TYPE_BASIC        0
