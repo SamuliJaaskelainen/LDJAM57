@@ -58,6 +58,9 @@ void MoveEnemyBulletDown(char i);
 void MoveEnemyBulletLeft(char i);
 void MoveEnemyBulletRight(char i);
 
+// Roar
+void Roar(char i);
+
 // Enemy AI
 void InitTurrets(void);
 void ActivateTurretAt(unsigned int posX, unsigned int posY, unsigned char mode);
@@ -103,6 +106,7 @@ unsigned char bulletShootDir = 1;
 unsigned int keyStatus = 0;
 unsigned char playerTwoJoined = 0;
 
+// Copy of the map in ram
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 
 // Gamestate and counters
@@ -316,7 +320,7 @@ void LoadGameScreen(void)
         enemyBullets[i].spriteY = 0;
         enemyBullets[i].isVisible = 0;
         enemyBullets[i].size = 8;
-        enemyBullets[i].speed = 4;
+        enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
         enemyBullets[i].direction = DIRECTION_DOWN;
         enemyBullets[i].spriteOneIndex = 12;
         enemyBullets[i].spriteTwoIndex = 0;
@@ -369,8 +373,8 @@ void HandleGameScreen(void)
         if (players[i].actionCount != 0) { players[i].actionCount--; UpdateAction(i); }
         UpdatePlayerAnimations(i);
         UpdateBullets(i);
-        UpdateEnemyBullets();
     }
+    UpdateEnemyBullets();
     
     if(sfxCountdown > 0)
     {
@@ -520,13 +524,15 @@ void UpdatePlayer(char i)
         {
             players[i].actionOnePressed = 1;
             players[i].action = ACTION_ONE;
-            players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
+            players[i].actionCount = PLAYER_ROAR_FRAME_COUNT;
+            players[i].actionFrame = PLAYER_ROAR_FRAME;
             return;
         }
         else if (keyStatus & PORT_A_KEY_2)
         {
             players[i].action = ACTION_TWO;
             players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
+            players[i].actionFrame = PLAYER_ACTION_INTERACTION_FRAME;
             return;
         }
 
@@ -563,13 +569,15 @@ void UpdatePlayer(char i)
         {
             players[i].actionOnePressed = 1;
             players[i].action = ACTION_ONE;
-            players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
+            players[i].actionCount = PLAYER_ROAR_FRAME_COUNT;
+            players[i].actionFrame = PLAYER_ROAR_FRAME;
             return;
         }
         else if (keyStatus & PORT_B_KEY_2)
         {
             players[i].action = ACTION_TWO;
             players[i].actionCount = PLAYER_ACTION_FRAME_COUNT;
+            players[i].actionFrame = PLAYER_ACTION_INTERACTION_FRAME;
             return;
         }
 
@@ -909,11 +917,11 @@ void MoveRight(char i)
 
 void UpdateAction(char i)
 {
-    if(players[i].actionCount == PLAYER_ACTION_INTERACTION_FRAME)
+    if(players[i].actionCount == players[i].actionFrame)
     {
         if(players[i].action == ACTION_ONE)
         {
-            LoadAndPlaySFX(SFX_EXPLOSION);
+            Roar(i);
         }
         else if(players[i].action == ACTION_TWO)
         {
@@ -944,6 +952,19 @@ void MetatileInteraction(unsigned char *metatile)
             
             // TODO end screen song
             // PSGPlay(&end_psg);
+        }
+    }
+}
+
+void Roar(char i)
+{
+    LoadAndPlaySFX(SFX_EXPLOSION);
+
+    for(char j = 0; j < ENEMY_BULLET_COUNT; ++j)
+    {
+        if(boxCollisionToPoint(playersSprites[i].spriteX - 40, playersSprites[i].spriteY - 40, 80, enemyBullets[j].spriteX, enemyBullets[j].spriteY))
+        {
+            enemyBullets[j].isVisible = 0;
         }
     }
 }
@@ -1126,45 +1147,43 @@ void UpdateEnemyBullets(void)
     {
         if(enemyBullets[i].isVisible)
         {
+            switch (enemyBullets[i].direction)
             {
-                switch (enemyBullets[i].direction)
-                {
-                    case DIRECTION_UP:
-                        MoveEnemyBulletUp(i);
-                    break;
+                case DIRECTION_UP:
+                    MoveEnemyBulletUp(i);
+                break;
 
-                    case DIRECTION_DOWN:
-                        MoveEnemyBulletDown(i);
-                    break;
+                case DIRECTION_DOWN:
+                    MoveEnemyBulletDown(i);
+                break;
 
-                    case DIRECTION_LEFT:
-                        MoveEnemyBulletLeft(i);
-                    break;
+                case DIRECTION_LEFT:
+                    MoveEnemyBulletLeft(i);
+                break;
 
-                    case DIRECTION_RIGHT:
-                        MoveEnemyBulletRight(i);
-                    break;
+                case DIRECTION_RIGHT:
+                    MoveEnemyBulletRight(i);
+                break;
 
-                    case DIRECTION_UP_LEFT:
-                        MoveEnemyBulletUp(i);
-                        MoveEnemyBulletLeft(i);
-                    break;
+                case DIRECTION_UP_LEFT:
+                    MoveEnemyBulletUp(i);
+                    MoveEnemyBulletLeft(i);
+                break;
 
-                    case DIRECTION_UP_RIGHT:
-                        MoveEnemyBulletUp(i);
-                        MoveEnemyBulletRight(i);
-                    break;
+                case DIRECTION_UP_RIGHT:
+                    MoveEnemyBulletUp(i);
+                    MoveEnemyBulletRight(i);
+                break;
 
-                    case DIRECTION_DOWN_LEFT:
-                        MoveEnemyBulletDown(i);
-                        MoveEnemyBulletLeft(i);
-                    break;
+                case DIRECTION_DOWN_LEFT:
+                    MoveEnemyBulletDown(i);
+                    MoveEnemyBulletLeft(i);
+                break;
 
-                    case DIRECTION_DOWN_RIGHT:
-                        MoveEnemyBulletDown(i);
-                        MoveEnemyBulletRight(i);
-                    break;
-                }
+                case DIRECTION_DOWN_RIGHT:
+                    MoveEnemyBulletDown(i);
+                    MoveEnemyBulletRight(i);
+                break;
             }
 
             // Apply scrolling

@@ -23,6 +23,7 @@ struct PlayerObject
     unsigned int ramDataAddress;
     unsigned char action;
     unsigned char actionCount;
+    unsigned char actionFrame;
     unsigned char actionOnePressed; // Action one cannot be hold, this variable is for checking presses
     unsigned char inputVertical;
     unsigned char inputHorizontal;
@@ -68,5 +69,17 @@ char spriteToSpriteCollision(struct SpriteObject *a, struct SpriteObject *b)
    unsigned int bottomB = b->positionY + b->size;
 
    if (rightA < leftB || leftA > rightB || bottomA < topB || topA > bottomB)  return 0;
+   else return 1;
+}
+
+// Return 0 if no collision
+char boxCollisionToPoint(char aPosX, char aPosY, char aSize, char bPosX, char bPosY)
+{
+   unsigned int leftA = aPosX;
+   unsigned int rightA = aPosX + aSize;
+   unsigned int topA = aPosY;
+   unsigned int bottomA = aPosY + aSize;
+
+   if (rightA < bPosX || leftA > bPosX || bottomA < bPosY || topA > bPosY)  return 0;
    else return 1;
 }
