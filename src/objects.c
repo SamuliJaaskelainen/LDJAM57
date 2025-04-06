@@ -113,7 +113,7 @@ char spriteToSpriteCollision(struct SpriteObject *a, struct SpriteObject *b)
 }
 
 // Return 0 if no collision
-char boxCollisionToPoint(char aPosX, char aPosY, char aSize, char bPosX, char bPosY)
+char boxCollisionToPoint(unsigned char aPosX, unsigned char aPosY, unsigned char aSize, unsigned char bPosX, unsigned char bPosY)
 {
    unsigned int leftA = aPosX;
    unsigned int rightA = aPosX + aSize;
