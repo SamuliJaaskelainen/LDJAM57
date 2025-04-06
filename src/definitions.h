@@ -80,8 +80,8 @@
 #define TURRET_SCAN_INTERVAL        60  // Scan every 60 frames
 
 // Constants for the player's bounding box
-#define ACTIVATION_BOX_HALF_WIDTH  128  // Half-width of activation area
-#define ACTIVATION_BOX_HALF_HEIGHT 96   // Half-height of activation area
+#define ACTIVATION_BOX_HALF_WIDTH  96//128  // Half-width of activation area
+#define ACTIVATION_BOX_HALF_HEIGHT 96//96   // Half-height of activation area
 
 // Enemy Type Defines
 #define ENEMY_TYPE_BASIC        0
