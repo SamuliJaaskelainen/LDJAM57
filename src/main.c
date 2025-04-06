@@ -4,6 +4,7 @@
 
 #include "..\banks\bank2.h"
 #include "..\banks\bank3.h"
+#include "..\banks\bank4.h"
 
 #include "definitions.h"
 #include "resources.c"
@@ -217,9 +218,6 @@ void LoadGameScreen(void)
 {
     gameState = GAME_STATE_GAME;
 
-    // Init audio & play music
-    //LoadAndPlayMusic();
-
     // Setup VDP
     SMS_displayOff();
     SMS_useFirstHalfTilesforSprites(0);
@@ -308,7 +306,10 @@ void LoadGameScreen(void)
     numFactories = MAX_FACTORY_NUM;
     playerTwoJoined = 0;
 
-    // Set bank for streaming tiles
+    // Init audio & play music
+    LoadAndPlayMusic();
+
+    // Set bank for streaming tiles (should use same bank as audio)
     SMS_mapROMBank(player_tiles_bin_bank);
 }
 
@@ -877,7 +878,7 @@ void UpdateAction(char i)
     {
         if(players[i].action == ACTION_ONE)
         {
-            //PSGPlay(&explosion0_psg);
+            //PSGSFXPlay(&explosion0_psg, SFX_CHANNEL3);
         }
         else if(players[i].action == ACTION_TWO)
         {
