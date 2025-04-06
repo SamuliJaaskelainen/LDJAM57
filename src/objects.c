@@ -30,18 +30,58 @@ struct PlayerObject
     struct SpriteObject bullets[PLAYER_BULLET_COUNT];
 };
 
+// Stores information for turret activation and shooting calculations
+struct TurretSector {
+    unsigned char sector_x;    // Sector X coordinate
+    unsigned char sector_y;    // Sector Y coordinate
+    unsigned char count;       // Number of turrets in this sector
+    struct {
+        unsigned char rel_x;   // Relative X within sector (0-127)
+        unsigned char rel_y;   // Relative Y within sector (0-127)
+        unsigned char mode;    // Firing mode
+    } turrets[MAX_TURRETS_PER_SECTOR];
+};
+
+struct TurretSector turretSectors[MAX_SECTORS];
+unsigned char sectorCount = 0;
+
+// Stores information for turret activation and shooting calculations
 struct TurretInfo {
+    // Absolute position (needed for shooting calculations)
+    // Absolute position (needed for shooting calculations)
     unsigned int positionX;
     unsigned int positionY;
-    unsigned char isActive; // not active = not shooting
-    unsigned char isDestroyed; // determines if it's pollenated and permanently inactive
+    
+    // Sector information
+    unsigned char sector_x;
+    unsigned char sector_y;
+    unsigned char rel_x;      // Relative position within sector (0-255)
+    unsigned char rel_y;      // Relative position within sector (0-255)
+    
+    // State
+    unsigned char isActive;   // 1 if currently active (shooting), 0 otherwise
+    unsigned char isDestroyed; // 1 if permanently destroyed
     unsigned char shootTimer;
-    unsigned char fireMode;  // 0 = random direction, 1 = shoot at player current location, 2 = shoot ahead of player's current position
+    unsigned char fireMode;   // 0=random, 1=player targeted
 };
 
 // Array to track active turrets
 struct TurretInfo turrets[MAX_ACTIVE_TURRETS];
 
+// struct for tile normal/flower versions
+struct TilePair {
+    unsigned char normalTile;
+    unsigned char flowerTile;
+};
+
+// Array of walkable tile pairs - add all tile pairs here
+const struct TilePair walkableTilePairs[MAX_TILE_PAIRS] = {
+    {8, 104},    // Example: Normal ground = 8, Flowered ground = 104
+    {56, 112},   // Example: Another tile type
+    // Add more tile pairs as needed
+};
+
+// Sprite Animation and Collision Functions Start
 void setSpriteAnimation(struct SpriteObject *spriteObject, const unsigned int *data)
 {
     for(char i = 0; i < spriteObject->animationFrameDataCount; ++i)
@@ -83,3 +123,4 @@ char boxCollisionToPoint(char aPosX, char aPosY, char aSize, char bPosX, char bP
    if (rightA < bPosX || leftA > bPosX || bottomA < bPosY || topA > bPosY)  return 0;
    else return 1;
 }
+// Sprite Animation and Collision Functions End
