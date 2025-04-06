@@ -34,7 +34,6 @@
 #define MAX_TILE_PAIRS          2 // currently just for testing factory and turret
 #define MAX_TURRETS_PER_SECTOR  8
 
-
 // Player Defines
 #define PLAYER_COUNT            2
 #define PLAYER_ONE              0
@@ -84,7 +83,6 @@
 #define ACTIVATION_BOX_HALF_WIDTH  128  // Half-width of activation area
 #define ACTIVATION_BOX_HALF_HEIGHT 96   // Half-height of activation area
 
-
 // Enemy Type Defines
 #define ENEMY_TYPE_BASIC        0
 #define ENEMY_TYPE_ADVANCED     1
@@ -98,5 +96,8 @@
 #define SFX_MAP                 4
 #define SFX_ROAR                5
 #define SFX_PLAYER_SHOOT        6
+
+// Menus
+#define FONT_VRAM_OFFSET 320
 
 #endif /* DEFINITIONS_H */

@@ -122,6 +122,8 @@ unsigned char numFactories = MAX_FACTORY_NUM; // when this reaches 0, game is wo
 unsigned char numFactoriesSpriteIdOne = 0;
 unsigned char numFactoriesSpriteIdTwo = 0;
 unsigned char menuButtonPressed = 0;
+unsigned char menuStartFlasher = 0;
+unsigned char menuStartVisible = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
@@ -244,9 +246,16 @@ void LoadTitleScreen(void)
     // Load the title screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
     SMS_loadBGPalette(&startendpalette_pal_bin);
-    SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
-    SMS_loadTileMap(0,0,&start_map_bin, start_map_bin_size);
-    
+    //SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
+    //SMS_loadTileMap(0,0,&start_map_bin, start_map_bin_size);
+    SMS_mapROMBank(font_tiles_bin_bank);
+    SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
+    SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
+    SMS_printatXY(7, 3, "--==GOODZILLA==--");
+    SMS_printatXY(10, 8, "Press START");
+    SMS_printatXY(7, 16, "Player Two can join");
+    SMS_printatXY(7, 17, "by pressing START");
+    SMS_printatXY(7, 18, "during gameplay!");
     // Loading complete, start display
     SMS_displayOn();
 }
@@ -268,8 +277,19 @@ void LoadEndScreen(void)
     // Load the end screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
     SMS_loadBGPalette(&startendpalette_pal_bin);
-    SMS_loadTiles(&end_tiles_bin, 0, end_tiles_bin_size);
-    SMS_loadTileMap(0,0,&end_map_bin, end_map_bin_size);
+    //SMS_loadTiles(&end_tiles_bin, 0, end_tiles_bin_size);
+    //SMS_loadTileMap(0,0,&end_map_bin, end_map_bin_size);
+    SMS_mapROMBank(font_tiles_bin_bank);
+    SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
+    SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
+    SMS_printatXY(7, 3, "World liberated!");
+    SMS_printatXY(10, 8, "Press START");
+    SMS_printatXY(3, 16, "CREDITS:");
+    SMS_printatXY(4, 17, "        [[    [");
+    SMS_printatXY(4, 18, "Samuli Jaaskelainen");
+    SMS_printatXY(4, 19, "Keith Davis");
+    SMS_printatXY(4, 20, "Andrea Kranck");
+    SMS_printatXY(4, 21, "Borb");
     
     // Loading complete, start display
     SMS_displayOn();
@@ -387,6 +407,22 @@ void LoadGameScreen(void)
 
 void HandleTitleScreen(void)
 {
+    menuStartFlasher++;
+    if(menuStartFlasher > 20)
+    {
+        menuStartFlasher = 0;
+        if(menuStartVisible)
+        {
+            SMS_printatXY(10, 8, "           ");
+            menuStartVisible = 0;
+        }
+        else
+        {
+            SMS_printatXY(10, 8, "Press START");
+            menuStartVisible = 1;
+        }
+    }
+
     if(menuButtonPressed)
     {
         if (!(keyStatus & PORT_A_KEY_1))
@@ -406,6 +442,22 @@ void HandleTitleScreen(void)
 
 void HandleEndScreen(void)
 {
+    menuStartFlasher++;
+    if(menuStartFlasher > 20)
+    {
+        menuStartFlasher = 0;
+        if(menuStartVisible)
+        {
+            SMS_printatXY(10, 8, "           ");
+            menuStartVisible = 0;
+        }
+        else
+        {
+            SMS_printatXY(10, 8, "Press START");
+            menuStartVisible = 1;
+        }
+    }
+
     if(menuButtonPressed)
     {
         if (!(keyStatus & PORT_A_KEY_1))

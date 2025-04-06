@@ -16,3 +16,6 @@ extern const unsigned char	startendpalette_pal_bin[16];
 extern const unsigned char	black_palette_bin[17];
 #define				black_palette_bin_size 17
 #define				black_palette_bin_bank 2
+extern const unsigned char	font_tiles_bin[3040];
+#define				font_tiles_bin_size 3040
+#define				font_tiles_bin_bank 2
