@@ -6,6 +6,7 @@
 #include "..\banks\bank3.h"
 //#include "..\banks\bank4.h"
 
+#include "definitions.h"
 #include "resources.c"
 #include "objects.c"
 
@@ -45,6 +46,7 @@ char GetRightDownMetatile(char i);
 
 // Bullet Behavior
 void ShootBullet(char i);
+void ShootTurretBullet(char turretIndex);
 void UpdateBullets(char i);
 void MoveBulletUp(char i, char j);
 void MoveBulletDown(char i, char j);
@@ -55,6 +57,18 @@ void MoveEnemyBulletUp(char i);
 void MoveEnemyBulletDown(char i); 
 void MoveEnemyBulletLeft(char i);
 void MoveEnemyBulletRight(char i);
+
+// Enemy AI
+void InitTurrets(void);
+void ActivateTurretAt(unsigned int posX, unsigned int posY, unsigned char mode);
+char GetClosestPlayer(unsigned int posX, unsigned int posY);
+char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
+                          unsigned int targetX, unsigned int targetY);
+
+void ScanForTurrents(void);
+
+// Helper Functions
+int abs_delta(int delta);
 
 // Title and End Screen
 void LoadTitleScreen(void);
@@ -71,69 +85,6 @@ void RenderSpritesUnsafe(void);
 // Music and SFX handling 
 void LoadAndPlayMusic(void);
 void StopMusic(void);
-
-#define DIRECTION_NONE  	    0
-#define DIRECTION_UP 			1
-#define DIRECTION_DOWN 			2
-#define DIRECTION_LEFT  		3
-#define DIRECTION_RIGHT  		4
-#define DIRECTION_UP_LEFT		5
-#define DIRECTION_UP_RIGHT 		6
-#define DIRECTION_DOWN_LEFT  	7
-#define DIRECTION_DOWN_RIGHT  	8
-
-#define ACTION_STATIONARY 		0
-#define ACTION_ONE  			1
-#define ACTION_TWO  			2
-#define ACTION_MOVE  			3
-#define ACTION_STUN  			4
-
-// Metatile ids require updating every time the map is exported
-#define METATILE_TRIGGER_OFF    26
-#define METATILE_TRIGGER_ON     50
-#define METATILE_TURRET         17
-#define METATILE_TURRET_DEAD    3
-
-#define PLAYER_COUNT            2
-#define PLAYER_ONE              0
-#define PLAYER_TWO              1
-#define PLAYER_START_X          904
-#define PLAYER_START_Y          928
-#define PLAYER_SPRITE_START_X   136
-#define PLAYER_SPRITE_START_Y   96
-#define PLAYER_ACTION_FRAME_COUNT       15
-#define PLAYER_ACTION_INTERACTION_FRAME 14
-#define PLAYER_STUN_FRAME_COUNT         20
-#define PLAYER_COLLISION_VALUE  	    1
-#define PLAYER_ANIMATION_HOLD_DURATION  4
-
-// Screenspace defines
-#define SCREEN_WIDTH            256
-#define SCREEN_HEIGHT           192
-#define FONT_VRAM_OFFSET        320
-#define START_WOLRD_OFFSET_X    768
-#define START_WOLRD_OFFSET_Y    832
-
-// Game states
-#define GAME_STATE_TITLE    0
-#define GAME_STATE_GAME     1
-#define GAME_STATE_END      2
-
-// Game settings
-#define MAX_FACTORY_NUM 5
-
-// Enemies
-#define ENEMY_BULLET_COUNT          6
-#define ENEMY_BULLET_SPEED_DEFAULT  2
-
-const unsigned char PLAYER_SPEED_DEFAULT =  2;
-const unsigned char PLAYER_SPEED_DIAGONAL = 1;
-const unsigned char PLAYER_BULLET_SPEED_DEFAULT =  4;
-const unsigned char PLAYER_BULLET_SPEED_DIAGONAL = 2;
-
-const unsigned char SCREEN_EDGE_Y       = 96;
-const unsigned char SCREEN_EDGE_X_INNER = 120;
-const unsigned char SCREEN_EDGE_X_OUTER = 136;
 
 // Only Player One scrolls
 unsigned int scrollXTotal = 0;
@@ -360,6 +311,9 @@ void LoadGameScreen(void)
     numFactories = MAX_FACTORY_NUM;
     playerTwoJoined = 0;
 
+    // Initialize turrets
+    //InitTurrets();
+
     // Init audio & play music
     //LoadAndPlayMusic();
 
@@ -390,6 +344,9 @@ void HandleEndScreen(void)
 
 void HandleGameScreen(void)
 {
+    // Scan for and activate turrets
+    //ScanForTurrets();
+
     // Shoot take n steps, 0 means new actions can be started
     for(char i = 0; i < PLAYER_COUNT; ++i)
     {
@@ -1220,3 +1177,204 @@ void UpdateEnemyBullets(void)
         }
     }
 }
+
+/// Enemy AI Logic Start
+
+void InitTurrets(void) {
+    // Initialize all turrets as inactive
+    for(char i = 0; i < MAX_ACTIVE_TURRETS; ++i) {
+        turrets[i].isActive = 0;
+        turrets[i].isDestroyed = 0;
+        turrets[i].shootTimer = 0;
+        // Default to random shooting
+        turrets[i].fireMode = 0;
+    }
+}
+
+void ActivateTurretAt(unsigned int posX, unsigned int posY, unsigned char mode) {
+    // Find an inactive turret slot
+    for(char i = 0; i < MAX_ACTIVE_TURRETS; ++i) {
+        if(!turrets[i].isActive && !turrets[i].isDestroyed) {
+            turrets[i].positionX = posX;
+            turrets[i].positionY = posY;
+            turrets[i].isActive = 1;
+            turrets[i].shootTimer = 0;
+            turrets[i].fireMode = mode;
+            return;
+        }
+    }
+}
+
+
+
+// Returns index of closest player (0 or 1) to given position
+// If player two is not active, always returns 0 (player 1)
+char GetClosestPlayer(unsigned int posX, unsigned int posY) {
+    if (!playerTwoJoined) return PLAYER_ONE;
+    
+    // Calculate Manhattan distance to player one
+    int distX1 = playersSprites[PLAYER_ONE].positionX > posX ? 
+                 playersSprites[PLAYER_ONE].positionX - posX : 
+                 posX - playersSprites[PLAYER_ONE].positionX;
+                 
+    int distY1 = playersSprites[PLAYER_ONE].positionY > posY ? 
+                 playersSprites[PLAYER_ONE].positionY - posY : 
+                 posY - playersSprites[PLAYER_ONE].positionY;
+    
+    int totalDist1 = distX1 + distY1;
+    
+    // Calculate distance to player two
+    int distX2 = playersSprites[PLAYER_TWO].positionX > posX ? 
+                 playersSprites[PLAYER_TWO].positionX - posX : 
+                 posX - playersSprites[PLAYER_TWO].positionX;
+                 
+    int distY2 = playersSprites[PLAYER_TWO].positionY > posY ? 
+                 playersSprites[PLAYER_TWO].positionY - posY : 
+                 posY - playersSprites[PLAYER_TWO].positionY;
+    
+    int totalDist2 = distX2 + distY2;
+    
+    // Return index of closest player
+    return (totalDist1 <= totalDist2) ? PLAYER_ONE : PLAYER_TWO;
+}
+
+// Lookup table for direction based on angle octants
+// Maps from 0-7 to DIRECTION_UP, DIRECTION_UP_RIGHT, etc.
+const unsigned char directionLookup[8] = {
+    DIRECTION_RIGHT,
+    DIRECTION_UP_RIGHT,
+    DIRECTION_UP,
+    DIRECTION_UP_LEFT,
+    DIRECTION_LEFT,
+    DIRECTION_DOWN_LEFT,
+    DIRECTION_DOWN,
+    DIRECTION_DOWN_RIGHT
+};
+
+// Determines which of 8 directions to fire in to aim at a target
+// Returns DIRECTION_* value
+char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
+                          unsigned int targetX, unsigned int targetY) {
+    
+    // Calculate deltas
+    int deltaX = targetX - sourceX;
+    int deltaY = targetY - sourceY;
+    
+    // Determine octant (0-7) based on deltas
+    // Using bit shift for multiplication/division by 2
+    char octant = 0;
+    
+    // Check if mostly vertical
+    if (abs_delta(deltaY) > abs_delta(deltaX)) {
+        // Vertical axis dominant
+        octant = (deltaY < 0) ? 2 : 6;  // Up or Down
+        
+        // Adjust for diagonal
+        if (deltaX < 0) octant += 1;    // Left diagonal
+        else if (deltaX > 0) octant -= 1; // Right diagonal
+    }
+    else {
+        // Horizontal axis dominant
+        octant = (deltaX < 0) ? 4 : 0;  // Left or Right
+        
+        // Adjust for diagonal
+        if (deltaY < 0) octant -= 1;    // Up diagonal
+        else if (deltaY > 0) octant += 1; // Down diagonal
+        
+        // Handle wrap-around
+        if (octant < 0) octant += 8;
+        if (octant >= 8) octant -= 8;
+    }
+    
+    // Look up the direction from the table
+    return directionLookup[octant];
+}
+
+// gets absolute value
+int abs_delta(int delta) {
+    return (delta < 0) ? -delta : delta;
+}
+
+void ShootTurretBullet(char turretIndex) {
+    // Find the first available enemy bullet
+    for(char i = 0; i < ENEMY_BULLET_COUNT; ++i) {
+        if(!enemyBullets[i].isVisible) {
+            // Position bullet at turret location
+            enemyBullets[i].positionX = turrets[turretIndex].positionX;
+            enemyBullets[i].positionY = turrets[turretIndex].positionY;
+            enemyBullets[i].spriteX = turrets[turretIndex].positionX - scrollXTotal + 128;
+            enemyBullets[i].spriteY = turrets[turretIndex].positionY - scrollYTotal + 96;
+            enemyBullets[i].isVisible = 1;
+            enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+            
+            // Determine direction based on fireMode
+            if(turrets[turretIndex].fireMode == 0) {
+                // Random direction (1-8)
+                // Use a simple counter for "randomness" - avoid actual random functions
+                static unsigned char pseudoRandom = 0;
+                pseudoRandom = (pseudoRandom + 1) & 0x07; // Quick mod 8 using bitwise AND
+                enemyBullets[i].direction = pseudoRandom + 1; // Convert to 1-8 range
+            } 
+            else if(turrets[turretIndex].fireMode == 1) {
+                // Aim at closest player
+                char playerIndex = GetClosestPlayer(turrets[turretIndex].positionX, 
+                                                    turrets[turretIndex].positionY);
+                                                    
+                enemyBullets[i].direction = GetEnemyFireDirection(
+                    turrets[turretIndex].positionX, 
+                    turrets[turretIndex].positionY,
+                    playersSprites[playerIndex].positionX,
+                    playersSprites[playerIndex].positionY
+                );
+            }
+            
+            // Adjust speed for diagonal directions
+            if(enemyBullets[i].direction == DIRECTION_UP_LEFT ||
+               enemyBullets[i].direction == DIRECTION_UP_RIGHT ||
+               enemyBullets[i].direction == DIRECTION_DOWN_LEFT ||
+               enemyBullets[i].direction == DIRECTION_DOWN_RIGHT) {
+                enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT >> 1; // Divide by 2 using bit shift
+            }
+            
+            return;
+        }
+    }
+}
+
+void ScanForTurrets(void) {
+    // Define viewport bounds with a small buffer
+    unsigned int minX = scrollXTotal - 32;
+    unsigned int maxX = scrollXTotal + SCREEN_WIDTH + 32;
+    unsigned int minY = scrollYTotal - 32;
+    unsigned int maxY = scrollYTotal + SCREEN_HEIGHT + 32;
+    
+    // Scan visible tiles on a grid (every 16 pixels)
+    for(unsigned int x = minX & 0xFFF0; x < maxX; x += 16) {
+        for(unsigned int y = minY & 0xFFF0; y < maxY; y += 16) {
+            // Check if tile is a turret
+            unsigned char metatile = *GSL_metatileLookup(x, y);
+            if(metatile == METATILE_TURRET) {
+                // Check if this turret is already active
+                char alreadyActive = 0;
+                for(char i = 0; i < MAX_ACTIVE_TURRETS; ++i) {
+                    if(turrets[i].isActive && 
+                       turrets[i].positionX >> 4 == x >> 4 && 
+                       turrets[i].positionY >> 4 == y >> 4) {
+                        alreadyActive = 1;
+                        break;
+                    }
+                }
+                
+                // If not active, activate it
+                if(!alreadyActive) {
+                    // Randomize between fireMode 0 and 1
+                    static unsigned char modeSelector = 0;
+                    modeSelector = (modeSelector + 1) & 0x01; // Toggle between 0 and 1
+                    ActivateTurretAt(x, y, modeSelector);
+                }
+            }
+        }
+    }
+}
+
+/// Enemy AI Logic End
