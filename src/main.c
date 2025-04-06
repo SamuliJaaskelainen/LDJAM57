@@ -66,12 +66,10 @@ void Roar(char i);
 // Enemy AI
 void InitTurrets(void);
 void ScanMapForTurrets(void);
-void ActivateTurretAt(unsigned int posX, unsigned int posY, unsigned char mode);
 char GetClosestPlayer(unsigned int posX, unsigned int posY);
 char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
                           unsigned int targetX, unsigned int targetY);
 void CheckTurretsInBoundingBox(void);
-void ActivateTurretsInSector(char sectorIndex, char sectorX, char sectorY);
 void UpdateTurrets(void);
 // Helper Functions
 int abs_delta(int delta);
@@ -114,7 +112,7 @@ unsigned char endCounter = 0;
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 
 // Turret Scanning
-unsigned char turretScanCounter = 0;
+unsigned char turretCheckIndex = 0;
 
 // Gamestate and counters
 unsigned char gameState = GAME_STATE_GAME;
@@ -371,8 +369,9 @@ void LoadGameScreen(void)
     playerTwoJoined = 0;
     endCounter = 0;
     UpdateNumFactoriesSpriteIds();
-
+  
     // Initialize turrets
+    ScanMapForTurrets();
     InitTurrets();
 
     // Init audio & play music
@@ -437,6 +436,8 @@ void HandleGameScreen(void)
 
     // Update general functions
     UpdateEnemyBullets();
+    CheckTurretsInBoundingBox(); // check one turret per frame
+    UpdateTurrets(); // Update and handle shooting for all active turrets
     if(endCounter > 0)
     {
         endCounter--;
@@ -1400,3 +1401,135 @@ int abs_delta(int delta) {
 }
 
 /// Enemy AI Logic End
+
+
+// TURRET LOGIC START
+
+void ScanMapForTurrets(void) {
+    unsigned int mapWidth = GSL_getMapWidthInPixels();
+    unsigned int mapHeight = GSL_getMapHeightInPixels();
+    unsigned char activeTurretCount = 0;
+    
+    // Loop through the entire map in metatile steps
+    for (unsigned int y = 0; y < mapHeight; y += 8) {
+        for (unsigned int x = 0; x < mapWidth; x += 8) {
+            // Get the metatile at this position
+            unsigned char *metatile = GSL_metatileLookup(x, y);
+            
+            // Check if this is a turret
+            if (*metatile == METATILE_TURRET) {
+                // Ensure we don't exceed the maximum number of turrets
+                if (activeTurretCount < MAX_ACTIVE_TURRETS) {
+                    // Initialize this turret
+                    turrets[activeTurretCount].positionX = x;
+                    turrets[activeTurretCount].positionY = y;
+                    turrets[activeTurretCount].isActive = 1;
+                    turrets[activeTurretCount].isDestroyed = 0;
+                    turrets[activeTurretCount].shootTimer = 0;
+                    // Randomize fire mode (0 for random, 1 for targeted)
+                    turrets[activeTurretCount].fireMode = (y % 2); // Simple way to alternate modes
+                    
+                    activeTurretCount++;
+                }
+            }
+        }
+    }
+    
+    // If we found fewer turrets than the maximum allowed, mark the rest as destroyed
+    // for (char i = activeTurretCount; i < MAX_ACTIVE_TURRETS; i++) {
+    //     turrets[i].isActive = 0;
+    //     turrets[i].isDestroyed = 1;
+    // }
+}
+
+void CheckTurretsInBoundingBox(void) {
+    // Define the player's viewing box (centered on player one)
+    unsigned int boxLeft = playersSprites[PLAYER_ONE].positionX - ACTIVATION_BOX_HALF_WIDTH;
+    unsigned int boxRight = playersSprites[PLAYER_ONE].positionX + ACTIVATION_BOX_HALF_WIDTH;
+    unsigned int boxTop = playersSprites[PLAYER_ONE].positionY - ACTIVATION_BOX_HALF_HEIGHT;
+    unsigned int boxBottom = playersSprites[PLAYER_ONE].positionY + ACTIVATION_BOX_HALF_HEIGHT;
+    
+    // Only check one turret per frame
+    if (!turrets[turretCheckIndex].isDestroyed) {
+        // Check if this turret is within the player's box
+        if (turrets[turretCheckIndex].positionX >= boxLeft && 
+            turrets[turretCheckIndex].positionX <= boxRight &&
+            turrets[turretCheckIndex].positionY >= boxTop && 
+            turrets[turretCheckIndex].positionY <= boxBottom) {
+            
+            // Activate this turret
+            turrets[turretCheckIndex].isActive = 1;
+        } else {
+            // Deactivate turrets outside the box
+            turrets[turretCheckIndex].isActive = 0;
+        }
+    }
+    
+    // Increment the counter for next frame
+    turretCheckIndex++;
+    if (turretCheckIndex >= MAX_ACTIVE_TURRETS) {
+        turretCheckIndex = 0;
+    }
+}
+
+void UpdateTurrets(void) {
+    // Only process active turrets
+    for (char i = 0; i < MAX_ACTIVE_TURRETS; i++) {
+        if (turrets[i].isActive && !turrets[i].isDestroyed) {
+            // Increment shoot timer
+            turrets[i].shootTimer++;
+            
+            // Check if it's time to shoot based on fire mode
+            if (turrets[i].fireMode == 0) { // Random firing mode
+                // Shoot every 32 frames
+                if (turrets[i].shootTimer >= 32) {
+                    // Reset timer
+                    turrets[i].shootTimer = 0;
+                    
+                    // Generate a random direction (1-8)
+                    char randomDir = (SMS_getKeysStatus() & 0x0F) % 8 + 1;
+                    
+                    // Try to shoot a bullet
+                    ShootTurretBullet(i);
+                    
+                    // Set bullet direction based on random value
+                    // Find a free bullet in the last bullet shot
+                    for (char j = 0; j < ENEMY_BULLET_COUNT; j++) {
+                        if (enemyBullets[j].isVisible) {
+                            enemyBullets[j].direction = randomDir;
+                            break;
+                        }
+                    }
+                }
+            }
+            // Other firing modes will be implemented later
+        }
+    }
+}
+
+void ShootTurretBullet(char turretIndex) {
+    // Look for a free enemy bullet
+    for (char i = 0; i < ENEMY_BULLET_COUNT; i++) {
+        if (!enemyBullets[i].isVisible) {
+            // Found a free bullet, initialize it
+            enemyBullets[i].isVisible = 1;
+            enemyBullets[i].positionX = turrets[turretIndex].positionX;
+            enemyBullets[i].positionY = turrets[turretIndex].positionY;
+            
+            // Calculate screen coordinates from world position
+            // Adjust for scroll offset
+            enemyBullets[i].spriteX = (turrets[turretIndex].positionX - scrollXTotal);
+            enemyBullets[i].spriteY = (turrets[turretIndex].positionY - scrollYTotal);
+            
+            // Set default speed - this might be adjusted based on direction
+            enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+            
+            // Play sound effect
+            LoadAndPlaySFX(SFX_ENEMY_SHOOT);
+            
+            // We found a bullet and initialized it, so return
+            return;
+        }
+    }
+    // If we get here, all bullets are in use
+}
