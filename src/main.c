@@ -839,6 +839,7 @@ void MetatileSwapShootable(unsigned char *metatile)
         {
             *metatile = shootableTilePairs[i].flowerTile;
             GSL_metatileUpdate();
+            LoadAndPlaySFX(SFX_CONVERT);
         }
     }
 }
