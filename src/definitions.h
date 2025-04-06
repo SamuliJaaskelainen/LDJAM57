@@ -28,11 +28,12 @@
 #define METATILE_FLOWERS            234
 
 // Map Data
-#define SECTOR_SIZE             256 // Size in pixels for subdividing the map into sectors
-#define MAX_SECTORS             16 // 1024x1024 map becomes 4x4 sectors
-#define MAX_FACTORY_NUM         5
-#define MAX_TILE_PAIRS          2 // currently just for testing factory and turret
-#define MAX_TURRETS_PER_SECTOR  8
+#define SECTOR_SIZE                 256 // Size in pixels for subdividing the map into sectors
+#define MAX_SECTORS                 16 // 1024x1024 map becomes 4x4 sectors
+#define MAX_FACTORY_NUM             5
+#define MAX_TILE_PAIRS_WALKABLE     2
+#define MAX_TILE_PAIRS_SHOOTABLE    2
+#define MAX_TURRETS_PER_SECTOR      8
 
 // Player Defines
 #define PLAYER_COUNT            2

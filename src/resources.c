@@ -33,7 +33,7 @@ const unsigned char metatilesMetaLUT[] =
 	0x00,	//14
 	0x00,	//15
 	0x00,	//16
-	0x00,	//17
+	0x01,	//17
 	0x00,	//18
 	0x00,	//19
 	0x00,	//20

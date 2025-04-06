@@ -34,7 +34,8 @@ char IsPlayerDownLeftBlocked(char i);
 char IsPlayerDownRightBlocked(char i);
 
 // Metatiles
-void MetatileSteppedOn(unsigned char *metatile);
+void MetatileSwapWalkable(unsigned char *metatile);
+void MetatileSwapShootable(unsigned char *metatile);
 void MetatileFactoryHit(unsigned char * metatile);
 char GetTopLeftMetatile(char i);
 char GetTopRightMetatile(char i);
@@ -801,17 +802,29 @@ void UpdatePlayer(char i)
 
         // Check metatile stepped on
         unsigned char *metatile = GSL_metatileLookup(playersSprites[i].positionX, playersSprites[i].positionY);
-        MetatileSteppedOn(metatile);
+        MetatileSwapWalkable(metatile);
     }
 }
 
-void MetatileSteppedOn(unsigned char *metatile)
+void MetatileSwapWalkable(unsigned char *metatile)
 {
-    for(char i  = 0; i < MAX_TILE_PAIRS; ++i)
+    for(char i = 0; i < MAX_TILE_PAIRS_WALKABLE; ++i)
     {
-        if (*metatile == walkableTilePairs[0].normalTile)
+        if (*metatile == walkableTilePairs[i].normalTile)
         {
-            *metatile = walkableTilePairs[0].flowerTile;
+            *metatile = walkableTilePairs[i].flowerTile;
+            GSL_metatileUpdate();
+        }
+    }
+}
+
+void MetatileSwapShootable(unsigned char *metatile)
+{
+    for(char i = 0; i < MAX_TILE_PAIRS_SHOOTABLE; ++i)
+    {
+        if (*metatile == shootableTilePairs[i].normalTile)
+        {
+            *metatile = shootableTilePairs[i].flowerTile;
             GSL_metatileUpdate();
         }
     }
@@ -1221,7 +1234,16 @@ void UpdateBullets(char i)
             }
             else if(*metatile == METATILE_TURRET)
             {
-                // TODO: Hit turret!
+                for(char k = 0; k < MAX_ACTIVE_TURRETS; ++k)
+                {
+                    if(boxCollisionToPointInt(players[i].bullets[j].positionX - 16, players[i].bullets[j].positionY - 16, 32, turrets[k].positionX, turrets[k].positionY))
+                    {
+                        MetatileSwapShootable(metatile);
+                        turrets[k].isDestroyed = 1;
+                        LoadAndPlaySFX(SFX_EXPLOSION);
+                    }
+                }
+
                 players[i].bullets[j].isVisible = 0;
             }
             else if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
@@ -1253,6 +1275,7 @@ void MetatileFactoryHit(unsigned char *metatile)
         UpdateNumFactoriesSpriteIds();
     }
 }
+
 
 void MoveEnemyBulletUp(char i)       { enemyBullets[i].positionY -= enemyBullets[i].speed; enemyBullets[i].spriteY -= enemyBullets[i].speed; }
 void MoveEnemyBulletDown(char i)     { enemyBullets[i].positionY += enemyBullets[i].speed; enemyBullets[i].spriteY += enemyBullets[i].speed; }
@@ -1305,17 +1328,13 @@ void UpdateEnemyBullets(void)
                 break;
             }
             
-            // Apply scrolling (unchanged)
-            
-            // Apply scrolling (unchanged)
+            // Apply scrolling
             enemyBullets[i].positionX -= scrollXThisFrame;
             enemyBullets[i].spriteX -= scrollXThisFrame;
             enemyBullets[i].positionY -= scrollYThisFrame;
             enemyBullets[i].spriteY -= scrollYThisFrame;
             
-            // Check for off-screen (unchanged)
-            
-            // Check for off-screen (unchanged)
+            // Check for off-screen
             if(enemyBullets[i].spriteY < 8
             || enemyBullets[i].spriteX < 8
             || enemyBullets[i].spriteY > SCREEN_HEIGHT - 8
@@ -1324,7 +1343,7 @@ void UpdateEnemyBullets(void)
                 enemyBullets[i].isVisible = 0;
             }
             
-            // Check collisions with players (unchanged)
+            // Check collisions with players
             for(char j = 0; j < PLAYER_COUNT; ++j)
             {
                 if(playersSprites[j].isVisible && players[j].action != ACTION_STUN)
