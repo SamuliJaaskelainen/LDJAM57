@@ -78,6 +78,8 @@ void UpdateTurrets(void);
 int abs_delta(int delta);
 char RandomDirection(void);
 
+unsigned char nextRandomByte(void);
+
 // Title and End Screen
 void LoadTitleScreen(void);
 void LoadEndScreen(void);
@@ -1581,48 +1583,51 @@ void ScanMapForTurrets(void)
 
 void CheckTurretsInBoundingBox(void)
 {
-    // Define the player's viewing box with some margin
-    unsigned int boxLeft = playersSprites[PLAYER_ONE].positionX - ACTIVATION_BOX_HALF_WIDTH;
-    unsigned int boxRight = playersSprites[PLAYER_ONE].positionX + ACTIVATION_BOX_HALF_WIDTH;
-    unsigned int boxTop = playersSprites[PLAYER_ONE].positionY - ACTIVATION_BOX_HALF_HEIGHT;
-    unsigned int boxBottom = playersSprites[PLAYER_ONE].positionY + ACTIVATION_BOX_HALF_HEIGHT;
+    // Get current viewport boundaries from GSLib
+    unsigned int viewportLeft = GSL_getCurrentX();
+    unsigned int viewportTop = GSL_getCurrentY();
+    unsigned int viewportRight = viewportLeft + SCREEN_WIDTH;
+    unsigned int viewportBottom = viewportTop + SCREEN_HEIGHT;
     
-    // Check a batch of turrets per frame (e.g., 2-3) for better responsiveness
-    unsigned char checkCount = 0;
-    unsigned char maxChecksPerFrame = 1;
+    // Add a small margin around the viewport to activate turrets slightly off-screen
+    unsigned int activationLeft = (viewportLeft > 8) ? (viewportLeft - 8) : 0;
+    unsigned int activationRight = viewportRight + 8;
+    unsigned int activationTop = (viewportTop > 8) ? (viewportTop - 8) : 0;
+    unsigned int activationBottom = viewportBottom + 8;
     
-    while (checkCount < maxChecksPerFrame && turretCheckIndex < MAX_ACTIVE_TURRETS)
+    // Prevent right/bottom from exceeding map boundaries
+    unsigned int mapWidth = GSL_getMapWidthInPixels();
+    unsigned int mapHeight = GSL_getMapHeightInPixels();
+    
+    if (activationRight > mapWidth) activationRight = mapWidth;
+    if (activationBottom > mapHeight) activationBottom = mapHeight;
+    
+    // Check a single turret per frame
+    if (!turrets[turretCheckIndex].isDestroyed)
     {
-        if (!turrets[turretCheckIndex].isDestroyed)
+        // Check if this turret is within the activation area
+        if (turrets[turretCheckIndex].positionX >= activationLeft && 
+            turrets[turretCheckIndex].positionX <= activationRight &&
+            turrets[turretCheckIndex].positionY >= activationTop && 
+            turrets[turretCheckIndex].positionY <= activationBottom)
         {
-            // Check if this turret is within the player's box
-            if (turrets[turretCheckIndex].positionX >= boxLeft && 
-                turrets[turretCheckIndex].positionX <= boxRight &&
-                turrets[turretCheckIndex].positionY >= boxTop && 
-                turrets[turretCheckIndex].positionY <= boxBottom)
-                {
-                
-                if(!turrets[turretCheckIndex].isActive)
-                {
-                    // Play sound effect when turret is activated
-                    LoadAndPlaySFX(SFX_MAP);
-                }
-
-                // Activate this turret
-                turrets[turretCheckIndex].isActive = 1;
-            }
-            else
+            if(!turrets[turretCheckIndex].isActive)
             {
-                // Deactivate turrets outside the box
-                turrets[turretCheckIndex].isActive = 0;
+                // Play sound effect when turret is activated
+                LoadAndPlaySFX(SFX_MAP);
             }
+            // Activate this turret
+            turrets[turretCheckIndex].isActive = 1;
         }
-        
-        turretCheckIndex++;
-        checkCount++;
+        else
+        {
+            // Deactivate turrets outside the activation area
+            turrets[turretCheckIndex].isActive = 0;
+        }
     }
     
-    // Loop back to the beginning once we've checked all turrets
+    // Move to next turret
+    turretCheckIndex++;
     if (turretCheckIndex >= MAX_ACTIVE_TURRETS)
     {
         turretCheckIndex = 0;
@@ -1723,45 +1728,36 @@ char ShootTurretBullet(char turretIndex, char direction)
 }
 
 // Helper function to get a random direction (1-8), should not return same direction twice in a row
-char RandomDirection(void) 
-{
-    // Create a pseudo-random value using multiple dynamic values
-    unsigned int randomValue = (keyStatus & 0xFF)                // Controller input
-                             + (scrollXTotal & 0xFF)             // World position X
-                             + ((scrollYTotal & 0xFF) << 2)      // World position Y (shifted)
-                             + (turretCheckIndex & 0x0F)         // Which turret is being checked
-                             + (bulletShootTimer & 0x07)         // Bullet timer
-                             + (sfxCountdown & 0x03)             // Sound effect timer
-                             + (numFactories & 0x07)             // Remaining factories
-                             + (menuStartFlasher & 0x0F)         // Menu animation state
-                             + (players[0].actionCount & 0x1F)   // Player 1 action state
-                             + (players[1].actionCount & 0x1F);  // Player 2 action state
+char RandomDirection(void) {
+    // Get a random byte
+    unsigned char randomValue = nextRandomByte();
     
-    // Further mix the bits
-    randomValue = (randomValue ^ (randomValue >> 4)) + (randomValue << 3);
+    // Use the low 3 bits (0-7) to index our direction map
+    unsigned char dirIndex = randomValue & 0x07;
     
-    // Determine whether to increase or decrease (get bit 0)
-    char increase = randomValue & 0x01;
+    // Get a new direction from the lookup table
+    char newDirection = directionMap[dirIndex];
     
-    // Get a new direction
-    char newDirection;
-    
-    if (lastRandomDirection == 0) {
-        // First call - just get a random direction
-        newDirection = ((randomValue >> 2) & 0x07) + 1;
-    } else {
-        // Subsequent calls - modify previous direction
-        if (increase) {
-            // Increase direction (wrap around from 8 to 1)
-            newDirection = (lastRandomDirection == 8) ? 1 : lastRandomDirection + 1;
-        } else {
-            // Decrease direction (wrap around from 1 to 8)
-            newDirection = (lastRandomDirection == 1) ? 8 : lastRandomDirection - 1;
-        }
+    // Avoid repeating the last direction
+    if (newDirection == lastRandomDirection) {
+        // Simple increment with wrap around, using just bitwise ops
+        dirIndex = (dirIndex + 1) & 0x07;
+        newDirection = directionMap[dirIndex];
     }
     
     // Store this direction for next time
     lastRandomDirection = newDirection;
     
     return newDirection;
+}
+
+
+// Pseudo-random number generator helper
+unsigned char nextRandomByte(void) {
+    static unsigned char seed = 127; // Initial seed value
+    
+    // Simple LFSR-style operation using just shifts and XOR
+    seed = (seed << 1) | ((((seed >> 7) ^ (seed >> 5) ^ (seed >> 4) ^ (seed >> 3)) & 1));
+    
+    return seed;
 }

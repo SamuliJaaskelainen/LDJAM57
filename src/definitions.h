@@ -13,6 +13,19 @@
 #define DIRECTION_DOWN_RIGHT  	8
 
 
+// direction map struct because I don't feel like writing every direction
+const unsigned char directionMap[8] = {
+    DIRECTION_UP,
+    DIRECTION_UP_RIGHT,
+    DIRECTION_RIGHT,
+    DIRECTION_DOWN_RIGHT,
+    DIRECTION_DOWN,
+    DIRECTION_DOWN_LEFT,
+    DIRECTION_LEFT,
+    DIRECTION_UP_LEFT
+};
+
+
 // Granular direction system
 #define DIRECTION_GRANULAR_COUNT    128
 
@@ -257,7 +270,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define TURRET_SCAN_INTERVAL        60  // Scan every 60 frames
 
 // Constants for the player's bounding box
-#define ACTIVATION_BOX_HALF_WIDTH  96//128  // Half-width of activation area
+#define ACTIVATION_BOX_HALF_WIDTH  128//128  // Half-width of activation area
 #define ACTIVATION_BOX_HALF_HEIGHT 96//96   // Half-height of activation area
 
 // Enemy Type Defines
