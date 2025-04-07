@@ -61,14 +61,21 @@ struct TurretInfo {
     unsigned int positionY;
     
     // State
-    unsigned char isActive;   // 1 if currently active (shooting), 0 otherwise
-    unsigned char isDestroyed; // 1 if permanently destroyed
+    unsigned char isActive;         // 1 if currently active (shooting), 0 otherwise
+    unsigned char isDestroyed;      // 1 if permanently destroyed
     unsigned char shootTimer;
-    unsigned char fireMode;   // 0=random, 1=player targeted
-};
+    unsigned char fireMode;         // 0=random, 1=player targeted
+    unsigned char lastDirectionFired; // Tracks the last direction fired (0-255)
+}; 
 
 // Array to track active turrets
 struct TurretInfo turrets[MAX_ACTIVE_TURRETS];
+
+// const Array for pseudo-random turret fire mode
+const unsigned char turretFireModeDistro[10] =
+{
+    0, 3, 3, 1, 3, 3, 3, 0, 3, 2
+};
 
 // struct for tile normal/flower versions
 struct TilePair {
