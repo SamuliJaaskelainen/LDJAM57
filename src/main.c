@@ -79,6 +79,7 @@ char ShootTurretBullet(char turretIndex, char direction);
 int abs_delta(int delta);
 char RandomDirection(void);
 char GetClockwiseDirection(struct TurretInfo *turret);
+char GetCounterClockwiseDirection(struct TurretInfo *turret);
 
 unsigned char nextRandomByte(void);
 
@@ -1479,7 +1480,7 @@ void InitTurrets(void) {
         turrets[i].isDestroyed = 0;
         turrets[i].shootTimer = 0;
         // Default to random shooting
-        turrets[i].fireMode = 1;
+        turrets[i].fireMode = 2;
     }
 }
 
@@ -1740,7 +1741,7 @@ void UpdateTurrets(void)
                         break;
                     
                     case 2: // CounterClockwise firing mode
-                        direction = RandomDirection();
+                    direction = GetCounterClockwiseDirection(&turrets[i]);
                         break;
 
                         
@@ -1879,6 +1880,18 @@ char GetClockwiseDirection(struct TurretInfo *turret) {
     // Wrap around if it exceeds 224 (7 * 32)
     if (turret->lastDirectionFired > 224) {
         turret->lastDirectionFired = 0;
+    }
+
+    return turret->lastDirectionFired;
+}
+
+// Helper function to get a direction in counterclockwise order using the 256-direction system
+char GetCounterClockwiseDirection(struct TurretInfo *turret) {
+    // Check for underflow before decrementing
+    if (turret->lastDirectionFired < 32) {
+        turret->lastDirectionFired = 224; // Wrap around to the last direction (7 * 32)
+    } else {
+        turret->lastDirectionFired -= 32; // Decrement by 32 (45 degrees)
     }
 
     return turret->lastDirectionFired;
