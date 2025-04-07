@@ -437,7 +437,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 // Map Data
 #define SECTOR_SIZE                 256 // Size in pixels for subdividing the map into sectors
 #define MAX_SECTORS                 16 // 1024x1024 map becomes 4x4 sectors
-#define MAX_FACTORY_NUM             5
+#define MAX_FACTORY_NUM             18
 #define MAX_TILE_PAIRS_WALKABLE     31
 #define MAX_TILE_PAIRS_SHOOTABLE    40
 #define MAX_TURRETS_PER_SECTOR      8
