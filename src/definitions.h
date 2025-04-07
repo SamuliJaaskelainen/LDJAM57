@@ -248,6 +248,140 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define METATILE_MINE               92
 #define METATILE_MINE_CONVERTED     142
 
+// Environment metatiles
+#define METATILE_ROAD_01     1
+#define METATILE_ROAD_01_C     1
+#define METATILE_ROAD_02     1
+#define METATILE_ROAD_02_C     1
+#define METATILE_ROAD_03     1
+#define METATILE_ROAD_03_C     1
+#define METATILE_ROAD_04     1
+#define METATILE_ROAD_04_C     1
+#define METATILE_ROAD_05     1
+#define METATILE_ROAD_05_C     1
+#define METATILE_ROAD_06     1
+#define METATILE_ROAD_06_C     1
+#define METATILE_ROAD_07     1
+#define METATILE_ROAD_07_C     1
+#define METATILE_ROAD_08     1
+#define METATILE_ROAD_08_C     1
+#define METATILE_ROAD_09     1
+#define METATILE_ROAD_09_C     1
+#define METATILE_ROAD_10     1
+#define METATILE_ROAD_10_C     1
+#define METATILE_ROAD_11     1
+#define METATILE_ROAD_11_C     1
+
+#define METATILE_WALL_01     1
+#define METATILE_WALL_01_C     1
+#define METATILE_WALL_02     1
+#define METATILE_WALL_02_C     1
+#define METATILE_WALL_03     1
+#define METATILE_WALL_03_C     1
+#define METATILE_WALL_04     1
+#define METATILE_WALL_04_C     1
+#define METATILE_WALL_05     1
+#define METATILE_WALL_05_C     1
+#define METATILE_WALL_06     1
+#define METATILE_WALL_06_C     1
+#define METATILE_WALL_07     1
+#define METATILE_WALL_07_C     1
+#define METATILE_WALL_08     1
+#define METATILE_WALL_08_C     1
+#define METATILE_WALL_09     1
+#define METATILE_WALL_09_C     1
+#define METATILE_WALL_10     1
+#define METATILE_WALL_10_C     1
+#define METATILE_WALL_11     1
+#define METATILE_WALL_11_C     1
+#define METATILE_WALL_12     1
+#define METATILE_WALL_12_C     1
+#define METATILE_WALL_13     1
+#define METATILE_WALL_13_C     1
+#define METATILE_WALL_14     1
+#define METATILE_WALL_14_C     1
+#define METATILE_WALL_15     1
+#define METATILE_WALL_15_C     1
+#define METATILE_WALL_16     1
+#define METATILE_WALL_16_C     1
+
+#define METATILE_BARREL_01     1
+#define METATILE_BARREL_01_C     1
+#define METATILE_BARREL_02     1
+#define METATILE_BARREL_02_C     1
+#define METATILE_BARREL_03     1
+#define METATILE_BARREL_03_C     1
+#define METATILE_BARREL_04     1
+#define METATILE_BARREL_04_C     1
+#define METATILE_BARREL_05     1
+#define METATILE_BARREL_05_C     1
+#define METATILE_BARREL_06     1
+#define METATILE_BARREL_06_C     1
+#define METATILE_BARREL_07     1
+#define METATILE_BARREL_07_C     1
+#define METATILE_BARREL_08     1
+#define METATILE_BARREL_08_C     1
+#define METATILE_BARREL_09     1
+#define METATILE_BARREL_09_C     1
+
+#define METATILE_CAR_01     1
+#define METATILE_CAR_01_C     1
+#define METATILE_CAR_02     1
+#define METATILE_CAR_02_C     1
+#define METATILE_CAR_03     1
+#define METATILE_CAR_03_C     1
+
+#define METATILE_HOUSE_01     1
+#define METATILE_HOUSE_01_C     1
+#define METATILE_HOUSE_02     1
+#define METATILE_HOUSE_02_C     1
+#define METATILE_HOUSE_03     1
+#define METATILE_HOUSE_03_C     1
+
+#define METATILE_SILO_01     1
+#define METATILE_SILO_01_C     1
+#define METATILE_SILO_02     1
+#define METATILE_SILO_02_C     1
+#define METATILE_SILO_03     1
+#define METATILE_SILO_03_C     1
+
+#define METATILE_STUMP_01     1
+#define METATILE_STUMP_01_C     1
+#define METATILE_STUMP_02     1
+#define METATILE_STUMP_02_C     1
+
+#define METATILE_FOREST_01     1
+#define METATILE_FOREST_01_C     1
+#define METATILE_FOREST_02     1
+#define METATILE_FOREST_02_C     1
+#define METATILE_FOREST_03     1
+#define METATILE_FOREST_03_C     1
+#define METATILE_FOREST_04     1
+#define METATILE_FOREST_04_C     1
+#define METATILE_FOREST_05     1
+#define METATILE_FOREST_05_C     1
+#define METATILE_FOREST_06     1
+#define METATILE_FOREST_06_C     1
+#define METATILE_FOREST_07     1
+#define METATILE_FOREST_07_C     1
+#define METATILE_FOREST_08     1
+#define METATILE_FOREST_08_C     1
+#define METATILE_FOREST_09     1
+#define METATILE_FOREST_09_C     1
+#define METATILE_FOREST_10     1
+#define METATILE_FOREST_10_C     1
+#define METATILE_FOREST_11     1
+#define METATILE_FOREST_11_C     1
+#define METATILE_FOREST_12     1
+#define METATILE_FOREST_12_C     1
+#define METATILE_FOREST_13     1
+#define METATILE_FOREST_13_C     1
+#define METATILE_FOREST_14     1
+#define METATILE_FOREST_14_C     1
+#define METATILE_FOREST_15     1
+#define METATILE_FOREST_15_C     1
+#define METATILE_FOREST_16     1
+#define METATILE_FOREST_16_C     1
 
 // Map Data
 #define SECTOR_SIZE                 256 // Size in pixels for subdividing the map into sectors
@@ -292,8 +426,9 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 
 // Game State Defines
 #define GAME_STATE_TITLE        0
-#define GAME_STATE_GAME         1
-#define GAME_STATE_END          2
+#define GAME_STATE_STORY        1
+#define GAME_STATE_GAME         2
+#define GAME_STATE_END          3
 
 // Enemy Defines
 #define ENEMY_BULLET_COUNT          6
