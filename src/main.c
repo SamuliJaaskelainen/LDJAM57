@@ -80,9 +80,11 @@ unsigned char nextRandomByte(void);
 
 // Title and End Screen
 void LoadTitleScreen(void);
+void LoadStoryScreen(void);
 void LoadEndScreen(void);
 void LoadGameScreen(void);
 void HandleTitleScreen(void);
+void HandleStoryScreen(void);
 void HandleEndScreen(void);
 void HandleGameScreen(void);
 
@@ -151,11 +153,6 @@ void main(void)
         // Handle current game state
         switch (gameState)
         {
-            case GAME_STATE_TITLE:
-                SMS_waitForVBlank();
-                HandleTitleScreen();
-                break;
-                
             case GAME_STATE_GAME:
                 HandleGameScreen();
                 if(gameState == GAME_STATE_END) break;
@@ -167,12 +164,22 @@ void main(void)
                 RenderSpritesUnsafe();
                 RenderSprites();
                 GSL_VBlank();
-                break;
+            break;
+
+            case GAME_STATE_TITLE:
+                SMS_waitForVBlank();
+                HandleTitleScreen();
+            break;
+                
+            case GAME_STATE_STORY:
+                SMS_waitForVBlank();
+                HandleStoryScreen();
+            break;
                 
             case GAME_STATE_END:
                 SMS_waitForVBlank();
                 HandleEndScreen();
-                break;
+            break;
         }
         
         // Play audio
@@ -261,6 +268,34 @@ void LoadTitleScreen(void)
     SMS_printatXY(7, 16, "Player Two can join");
     SMS_printatXY(7, 17, "by pressing START");
     SMS_printatXY(7, 18, "during gameplay!");
+    // Loading complete, start display
+    SMS_displayOn();
+}
+
+void LoadStoryScreen(void)
+{
+    gameState = GAME_STATE_STORY;
+    StopAllAudio();
+
+    // Setup VPD
+    SMS_VRAMmemsetW(0, 0, 0);
+    SMS_loadSpritePalette(black_palette_bin);
+    SMS_VDPturnOffFeature(VDPFEATURE_HIDEFIRSTCOL);
+    SMS_waitForVBlank();
+    SMS_displayOff();
+    SMS_setBGScrollX(0);
+    SMS_setBGScrollY(0);
+    
+    // Load the title screen tiles and data
+    SMS_mapROMBank(startendpalette_pal_bin_bank);
+    SMS_loadBGPalette(&startendpalette_pal_bin);
+    //SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
+    //SMS_loadTileMap(0,0,&start_map_bin, start_map_bin_size);
+    SMS_mapROMBank(font_tiles_bin_bank);
+    SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
+    SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
+    SMS_printatXY(7, 3, "STORY");
+    SMS_printatXY(10, 8, "Press START");
     // Loading complete, start display
     SMS_displayOn();
 }
@@ -424,6 +459,41 @@ void LoadGameScreen(void)
 }
 
 void HandleTitleScreen(void)
+{
+    menuStartFlasher++;
+    if(menuStartFlasher > 20)
+    {
+        menuStartFlasher = 0;
+        if(menuStartVisible)
+        {
+            SMS_printatXY(10, 8, "           ");
+            menuStartVisible = 0;
+        }
+        else
+        {
+            SMS_printatXY(10, 8, "Press START");
+            menuStartVisible = 1;
+        }
+    }
+
+    if(menuButtonPressed)
+    {
+        if (!(keyStatus & PORT_A_KEY_1))
+        {
+            menuButtonPressed = 0;
+        }
+    }
+    else
+    {
+        if (keyStatus & PORT_A_KEY_1)
+        {
+            menuButtonPressed = 1;
+            LoadStoryScreen();
+        }
+    }
+}
+
+void HandleStoryScreen(void)
 {
     menuStartFlasher++;
     if(menuStartFlasher > 20)
