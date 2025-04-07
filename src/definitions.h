@@ -127,6 +127,18 @@ const unsigned char directionTo128[9] = {
     112,   // DIRECTION_DOWN_RIGHT maps to 112 (315 degrees)
 };
 
+const unsigned char directionTo256[9] = {
+    255,   // DIRECTION_NONE maps to 255 (special value)
+    64,    // DIRECTION_UP maps to 64 (90 degrees)
+    192,   // DIRECTION_DOWN maps to 192 (270 degrees)
+    128,   // DIRECTION_LEFT maps to 128 (180 degrees)
+    0,     // DIRECTION_RIGHT maps to 0 (0 degrees)
+    96,    // DIRECTION_UP_LEFT maps to 96 (135 degrees)
+    32,    // DIRECTION_UP_RIGHT maps to 32 (45 degrees)
+    160,   // DIRECTION_DOWN_LEFT maps to 160 (225 degrees)
+    224,   // DIRECTION_DOWN_RIGHT maps to 224 (315 degrees)
+};
+
 
 
 // Function to convert from old 8-direction system to new 128-direction system
