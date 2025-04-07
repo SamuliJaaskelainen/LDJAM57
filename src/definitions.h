@@ -12,19 +12,6 @@
 #define DIRECTION_DOWN_LEFT  	7
 #define DIRECTION_DOWN_RIGHT  	8
 
-// Lookup table for direction based on angle octants
-// Maps from 0-7 to DIRECTION_UP, DIRECTION_UP_RIGHT, etc.
-const unsigned char directionLookup[8] = {
-    DIRECTION_RIGHT,
-    DIRECTION_UP_RIGHT,
-    DIRECTION_UP,
-    DIRECTION_UP_LEFT,
-    DIRECTION_LEFT,
-    DIRECTION_DOWN_LEFT,
-    DIRECTION_DOWN,
-    DIRECTION_DOWN_RIGHT
-};
-
 
 // Granular direction system
 #define DIRECTION_GRANULAR_COUNT    128
@@ -50,7 +37,6 @@ extern const unsigned char directionVectorYLow[DIRECTION_GRANULAR_COUNT];
 extern const unsigned char directionFlags[DIRECTION_GRANULAR_COUNT];
 
 // Function prototypes
-unsigned char ConvertOldDirectionToNew(unsigned char oldDir);
 void GetDirectionVector(unsigned char direction, DirectionVector* vector);
 unsigned char GetDirectionFromVector(signed int dx, signed int dy);
 
@@ -138,14 +124,6 @@ const unsigned char directionTo256[9] = {
     160,   // DIRECTION_DOWN_LEFT maps to 160 (225 degrees)
     224,   // DIRECTION_DOWN_RIGHT maps to 224 (315 degrees)
 };
-
-
-
-// Function to convert from old 8-direction system to new 128-direction system
-unsigned char ConvertOldDirectionToNew(unsigned char oldDir) {
-    if (oldDir > 8) return 255; // Invalid direction, return "none"
-    return directionTo128[oldDir];
-}
 
 void GetDirectionVector(unsigned char direction, DirectionVector* vector) {
     if (direction >= DIRECTION_GRANULAR_COUNT) {
