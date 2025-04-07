@@ -378,7 +378,6 @@ void LoadGameScreen(void)
 
     // Init enemy bullets
     for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
-    for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
     {
         enemyBullets[i].positionX = 0;
         enemyBullets[i].positionY = 0;
