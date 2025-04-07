@@ -57,10 +57,6 @@ void MoveBulletDown(char i, char j);
 void MoveBulletLeft(char i, char j);
 void MoveBulletRight(char i, char j);
 void UpdateEnemyBullets(void);
-void MoveEnemyBulletUp(char i);
-void MoveEnemyBulletDown(char i); 
-void MoveEnemyBulletLeft(char i);
-void MoveEnemyBulletRight(char i);
 void UpdateEnemyBulletPosition(char i);
 
 // Roar
@@ -1315,99 +1311,6 @@ void MetatileFactoryHit(unsigned char *metatile)
     }
 }
 
-
-void MoveEnemyBulletUp(char i)       { enemyBullets[i].positionY -= enemyBullets[i].speed; enemyBullets[i].spriteY -= enemyBullets[i].speed; }
-void MoveEnemyBulletDown(char i)     { enemyBullets[i].positionY += enemyBullets[i].speed; enemyBullets[i].spriteY += enemyBullets[i].speed; }
-void MoveEnemyBulletLeft(char i)     { enemyBullets[i].positionX -= enemyBullets[i].speed; enemyBullets[i].spriteX -= enemyBullets[i].speed; }
-void MoveEnemyBulletRight(char i)    { enemyBullets[i].positionX += enemyBullets[i].speed; enemyBullets[i].spriteX += enemyBullets[i].speed; }
-
-// void UpdateEnemyBullets(void)
-// {
-//     enemyBulletForCollisionUpdate++;
-//     if(enemyBulletForCollisionUpdate == ENEMY_BULLET_COUNT) enemyBulletForCollisionUpdate = 0;
-
-//     for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
-//     {
-//         if(enemyBullets[i].isVisible)
-//         {
-//             // Movement code for bullets
-//             switch (enemyBullets[i].direction)
-//             {
-//                 case DIRECTION_UP:
-//                     MoveEnemyBulletUp(i);
-//                 break;
-                
-//                 case DIRECTION_DOWN:
-//                     MoveEnemyBulletDown(i);
-//                 break;
-                
-//                 case DIRECTION_LEFT:
-//                     MoveEnemyBulletLeft(i);
-//                 break;
-                
-//                 case DIRECTION_RIGHT:
-//                     MoveEnemyBulletRight(i);
-//                 break;
-                
-//                 case DIRECTION_UP_LEFT:
-//                     MoveEnemyBulletUp(i);
-//                     MoveEnemyBulletLeft(i);
-//                 break;
-                
-//                 case DIRECTION_UP_RIGHT:
-//                     MoveEnemyBulletUp(i);
-//                     MoveEnemyBulletRight(i);
-//                 break;
-                
-//                 case DIRECTION_DOWN_LEFT:
-//                     MoveEnemyBulletDown(i);
-//                     MoveEnemyBulletLeft(i);
-//                 break;
-                
-//                 case DIRECTION_DOWN_RIGHT:
-//                     MoveEnemyBulletDown(i);
-//                     MoveEnemyBulletRight(i);
-//                 break;
-//             }
-            
-//             // Apply scrolling
-//             enemyBullets[i].positionX -= scrollXThisFrame;
-//             enemyBullets[i].spriteX -= scrollXThisFrame;
-//             enemyBullets[i].positionY -= scrollYThisFrame;
-//             enemyBullets[i].spriteY -= scrollYThisFrame;
-
-//             // Check for off-screen
-//             if(enemyBullets[i].spriteY < 8
-//             || enemyBullets[i].spriteX < 8
-//             || enemyBullets[i].spriteY > SCREEN_HEIGHT - 8
-//             || enemyBullets[i].spriteX > SCREEN_WIDTH - 8)
-//             {
-//                 enemyBullets[i].isVisible = 0;
-//                 continue;
-//             }
-
-//             // Check collisions with players, only one bullet collision check per frame
-//             if(enemyBulletForCollisionUpdate == i)
-//             {
-//                 for(char j = 0; j < PLAYER_COUNT; ++j)
-//                 {
-//                     if(playersSprites[j].isVisible && players[j].action != ACTION_STUN)
-//                     {
-//                         if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
-//                         {
-//                             LoadAndPlaySFX(SFX_EXPLOSION);
-//                             players[j].action = ACTION_STUN;
-//                             players[j].actionCount = PLAYER_STUN_FRAME_COUNT;
-//                             players[j].actionFrame = 99;
-//                             enemyBullets[i].isVisible = 0;
-//                             continue;
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
 void UpdateEnemyBullets(void)
 {
     enemyBulletForCollisionUpdate++;
@@ -1768,71 +1671,6 @@ void UpdateTurrets(void)
     }
 }
 
-// char ShootTurretBullet(char turretIndex, char direction) {
-//     // Find free bullet slot
-//     for (char i = 0; i < ENEMY_BULLET_COUNT; i++) {
-//         if (!enemyBullets[i].isVisible) {
-//             // Direction is already in the 128-direction system
-//             // No need to convert from old 8-direction system
-            
-//             // Initialize position
-//             enemyBullets[i].isVisible = 1;
-//             enemyBullets[i].positionX = turrets[turretIndex].positionX + 8;
-//             enemyBullets[i].positionY = turrets[turretIndex].positionY + 8;
-//             enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
-//             enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
-            
-//             // Reset subpixel components
-//             enemyBullets[i].subpixelX = 0;
-//             enemyBullets[i].subpixelY = 0;
-            
-//             // Get vector components directly from the lookup tables
-//             DirectionVector vector;
-//             GetDirectionVector(direction, &vector);
-            
-//             // Adjust speed based on direction (diagonal or cardinal)
-//             if (directionFlags[direction] & DIRECTION_FLAG_DIAGONAL) {
-//                 // For diagonals, scale down by about 0.7 (approximately 181/256)
-//                 enemyBullets[i].velocityX = (vector.x * 181) >> 8;
-//                 enemyBullets[i].velocityY = (vector.y * 181) >> 8;
-                
-//                 // Store fractional parts
-//                 enemyBullets[i].velocityX_frac = (vector.x * 181) & 0xFF;
-//                 enemyBullets[i].velocityY_frac = (vector.y * 181) & 0xFF;
-//             } else {
-//                 // For cardinal directions, use full speed
-//                 enemyBullets[i].velocityX = vector.x >> 8;
-//                 enemyBullets[i].velocityY = vector.y >> 8;
-//                 enemyBullets[i].velocityX_frac = vector.x & 0xFF;
-//                 enemyBullets[i].velocityY_frac = vector.y & 0xFF;
-//             }
-            
-//             // Store the original direction value for compatibility with existing code
-//             // We can map back to the old 8-direction system if needed
-//             switch (direction) {
-//                 case 0: enemyBullets[i].direction = DIRECTION_RIGHT; break;
-//                 case 16: enemyBullets[i].direction = DIRECTION_DOWN_RIGHT; break;
-//                 case 32: enemyBullets[i].direction = DIRECTION_DOWN; break;
-//                 case 48: enemyBullets[i].direction = DIRECTION_DOWN_LEFT; break;
-//                 case 64: enemyBullets[i].direction = DIRECTION_LEFT; break;
-//                 case 80: enemyBullets[i].direction = DIRECTION_UP_LEFT; break;
-//                 case 96: enemyBullets[i].direction = DIRECTION_UP; break;
-//                 case 112: enemyBullets[i].direction = DIRECTION_UP_RIGHT; break;
-//                 default: enemyBullets[i].direction = DIRECTION_DOWN; break;
-//             }
-            
-//             // Play sound effect if bullet is on screen
-//             if (enemyBullets[i].spriteX >= 8 && enemyBullets[i].spriteX <= SCREEN_WIDTH - 8 &&
-//                 enemyBullets[i].spriteY >= 8 && enemyBullets[i].spriteY <= SCREEN_HEIGHT - 8) {
-//                 LoadAndPlaySFX(SFX_ENEMY_SHOOT);
-//             }
-            
-//             return i;
-//         }
-//     }
-//     return -1;
-// }
-
 char ShootTurretBullet(char turretIndex, char direction) {
     // Find free bullet slot
     for (char i = 0; i < ENEMY_BULLET_COUNT; i++) {
@@ -1854,7 +1692,7 @@ char ShootTurretBullet(char turretIndex, char direction) {
             
             // Scale the speed - this is crucial
             // For 8-bit systems, we need a speed factor
-            char speedFactor = 1; // Adjust this value to match your desired speed
+            char speedFactor = 2; // Adjust this value to match your desired speed
             
             // For diagonals, we need to adjust the speed to maintain consistent velocity
             if (directionFlags[direction] & DIRECTION_FLAG_DIAGONAL) {
