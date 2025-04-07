@@ -1480,7 +1480,7 @@ void InitTurrets(void) {
         turrets[i].isDestroyed = 0;
         turrets[i].shootTimer = 0;
         // Default to random shooting
-        turrets[i].fireMode = 2;
+        turrets[i].fireMode = 4;
     }
 }
 
@@ -1762,7 +1762,15 @@ void UpdateTurrets(void)
 
                     case 4: // Player-targeted mode, exactly where player is standing
                     {
-                        direction = RandomDirection(); // currently not implemented
+                        char playerIndex = GetClosestPlayer(turrets[i].positionX, turrets[i].positionY);
+                            
+                        // Calculate direction to that player
+                        direction = GetPreciseFireDirection(
+                            turrets[i].positionX, 
+                            turrets[i].positionY,
+                            playersSprites[playerIndex].positionX, 
+                            playersSprites[playerIndex].positionY
+                        );
                     }
                     break;
                         
@@ -1895,6 +1903,97 @@ char GetCounterClockwiseDirection(struct TurretInfo *turret) {
     }
 
     return turret->lastDirectionFired;
+}
+
+unsigned char GetPreciseFireDirection(unsigned int turretX, unsigned int turretY,
+    unsigned int playerX, unsigned int playerY) {
+    // Calculate deltas (these can be negative)
+    int dx = 0;
+    int dy = 0;
+
+    // Handle potential overflow in subtraction
+    if (playerX >= turretX) {
+        dx = playerX - turretX;
+    } else {
+        dx = -(turretX - playerX);
+    }
+
+    if (playerY >= turretY) {
+        dy = playerY - turretY;
+    } else {
+        dy = -(turretY - playerY);
+    }
+    
+    // Special case: if both dx and dy are 0, return a default direction
+    if (dx == 0 && dy == 0) {
+        return 0; // Default direction
+    }
+    
+    // Scale dx and dy to fit within grid size
+    char tableX = 16; // Center of grid
+    char tableY = 16; // Center of grid
+    
+    // Get absolute values for calculations
+    unsigned int absDx = dx >= 0 ? dx : -dx;
+    unsigned int absDy = dy >= 0 ? dy : -dy;
+    
+    // Find the maximum of dx or dy to normalize against
+    unsigned int maxDelta = absDx > absDy ? absDx : absDy;
+    
+    // Normalize to grid size while preserving ratio
+    // Use bit shifts for division (faster than division on Z80)
+    unsigned int scaledX = 0;
+    unsigned int scaledY = 0;
+    
+    // Scale based on maximum delta - use different approaches based on size
+    // This avoids precision loss for small values while handling large ones
+    if (maxDelta < 16) {
+        // Small values - direct mapping
+        scaledX = absDx;
+        scaledY = absDy;
+    } else if (maxDelta < 32) {
+        // Medium values - shift right by 1 (divide by 2)
+        scaledX = absDx >> 1;
+        scaledY = absDy >> 1;
+    } else if (maxDelta < 64) {
+        // Larger values - shift right by 2 (divide by 4)
+        scaledX = absDx >> 2;
+        scaledY = absDy >> 2;
+    } else if (maxDelta < 128) {
+        // Even larger - shift right by 3 (divide by 8)
+        scaledX = absDx >> 3;
+        scaledY = absDy >> 3;
+    } else if (maxDelta < 256) {
+        // Large values - shift right by 4 (divide by 16)
+        scaledX = absDx >> 4;
+        scaledY = absDy >> 4;
+    } else if (maxDelta < 512) {
+        // Very large values - shift right by 5 (divide by 32)
+        scaledX = absDx >> 5;
+        scaledY = absDy >> 5;
+    } else {
+        // Extremely large values - shift right by 6 (divide by 64)
+        scaledX = absDx >> 6;
+        scaledY = absDy >> 6;
+    }
+    
+    // Apply scale within grid bounds (0-15)
+    if (scaledX > 15) scaledX = 15;
+    if (scaledY > 15) scaledY = 15;
+    
+    // Apply signs to determine final table indices
+    if (dx > 0) tableX += scaledX;
+    else if (dx < 0) tableX -= scaledX;
+    
+    if (dy > 0) tableY += scaledY;
+    else if (dy < 0) tableY -= scaledY;
+    
+    // Ensure indices stay within bounds (0-31)
+    if (tableX > 31) tableX = 31;
+    if (tableY > 31) tableY = 31;
+    
+    // Return direction from lookup table
+    return directionLookup[tableY][tableX];
 }
 // Pseudo-random number generator helper
 unsigned char nextRandomByte(void) {

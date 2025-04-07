@@ -40,7 +40,6 @@ extern const unsigned char directionFlags[DIRECTION_GRANULAR_COUNT];
 // Function prototypes
 void GetDirectionVector(unsigned char direction, DirectionVector* vector);
 unsigned char GetDirectionFromVector(signed int dx, signed int dy);
-unsigned char GetPreciseFireDirection(int dx, int dy);
 
 // High bytes (integer part) of X vector components (cosine)
 const signed char directionVectorXHigh[DIRECTION_GRANULAR_COUNT] = {
@@ -192,52 +191,6 @@ const unsigned char directionLookup[DIRECTION_GRID_SIZE][DIRECTION_GRID_SIZE] = 
     { 98,  97,  96,  94,  92,  91,  89,  87,  85,  82,  80,  77,  75,  72,  69,  66,  64,  61,  58,  55,  52,  50,  47,  45,  42,  40,  38,  36,  35,  33,  32,  30},
     { 97,  96,  94,  93,  91,  89,  87,  86,  83,  81,  79,  77,  74,  72,  69,  66,  64,  61,  58,  55,  53,  50,  48,  46,  44,  41,  40,  38,  36,  34,  33,  32}
 };
-
-unsigned char GetPreciseFireDirection(int dx, int dy) {
-    // Scale down large deltas and handle signs
-    char signX = (dx >= 0) ? 1 : -1;
-    char signY = (dy >= 0) ? 1 : -1;
-    
-    // Get absolute values
-    unsigned int absDx = (dx >= 0) ? dx : -dx;
-    unsigned int absDy = (dy >= 0) ? dy : -dy;
-    
-    // Scale down to fit table indices (0-15)
-    // Using bit shifts for efficiency
-    unsigned char tableX = 0;
-    unsigned char tableY = 0;
-    
-    // Find the highest non-zero bit position
-    // This is a simple way to normalize values while preserving ratios
-    if (absDx > 255) tableX = 15;
-    else if (absDx > 127) tableX = 14;
-    else if (absDx > 63) tableX = 13;
-    else if (absDx > 31) tableX = 12;
-    else if (absDx > 15) tableX = 11;
-    else if (absDx > 7) tableX = 10;
-    else if (absDx > 3) tableX = 9;
-    else if (absDx > 1) tableX = 8;
-    else if (absDx == 1) tableX = 7;
-    else tableX = 0; // absDx is 0
-    
-    if (absDy > 255) tableY = 15;
-    else if (absDy > 127) tableY = 14;
-    else if (absDy > 63) tableY = 13;
-    else if (absDy > 31) tableY = 12;
-    else if (absDy > 15) tableY = 11;
-    else if (absDy > 7) tableY = 10;
-    else if (absDy > 3) tableY = 9;
-    else if (absDy > 1) tableY = 8;
-    else if (absDy == 1) tableY = 7;
-    else tableY = 0; // absDy is 0
-    
-    // Adjust quadrant based on signs
-    unsigned char quadrantX = (signX > 0) ? 16 + tableX : 16 - tableX;
-    unsigned char quadrantY = (signY > 0) ? 16 + tableY : 16 - tableY;
-    
-    // Look up direction from table
-    return directionLookup[quadrantY][quadrantX];
-}
 
 
 // Mapping table from 8-dir to 128-dir
