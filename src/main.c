@@ -1440,24 +1440,23 @@ char GetClosestPlayer(unsigned int posX, unsigned int posY) {
     return (totalDist1 <= totalDist2) ? PLAYER_ONE : PLAYER_TWO;
 }
 
-char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
+char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY,
     unsigned int targetX, unsigned int targetY) {
-
     // Calculate deltas (these can be negative)
     int deltaX = 0;
     int deltaY = 0;
 
     // Handle potential overflow in subtraction
     if (targetX >= sourceX) {
-    deltaX = targetX - sourceX;
+        deltaX = targetX - sourceX;
     } else {
-    deltaX = -(sourceX - targetX);
+        deltaX = -(sourceX - targetX);
     }
 
     if (targetY >= sourceY) {
-    deltaY = targetY - sourceY;
+        deltaY = targetY - sourceY;
     } else {
-    deltaY = -(sourceY - targetY);
+        deltaY = -(sourceY - targetY);
     }
 
     // Get absolute values
@@ -1469,48 +1468,48 @@ char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY,
     // Check if absDeltaY > absDeltaX
     char verticalDominant = 0;
     if (absDeltaY > absDeltaX) {
-    verticalDominant = 1;
+        verticalDominant = 1;
     }
 
     // Determine the octant (direction) based on quadrant and dominant axis
     char direction;
 
     if (deltaY < 0) {  // Upper half
-    if (deltaX < 0) {  // Upper-left quadrant
-    if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
-    direction = 96;  // UP (largely vertical)
-    } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
-    direction = 64;  // LEFT (largely horizontal)
-    } else {
-    direction = 80;  // UP_LEFT (diagonal)
-    }
-    } else {  // Upper-right quadrant
-    if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
-    direction = 96;  // UP (largely vertical)
-    } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
-    direction = 0;   // RIGHT (largely horizontal)
-    } else {
-    direction = 112; // UP_RIGHT (diagonal)
-    }
-    }
+        if (deltaX < 0) {  // Upper-left quadrant
+            if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
+                direction = 192;  // UP (largely vertical) [96*2]
+            } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
+                direction = 128;  // LEFT (largely horizontal) [64*2]
+            } else {
+                direction = 160;  // UP_LEFT (diagonal) [80*2]
+            }
+        } else {  // Upper-right quadrant
+            if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
+                direction = 192;  // UP (largely vertical) [96*2]
+            } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
+                direction = 0;    // RIGHT (largely horizontal) [0*2]
+            } else {
+                direction = 224;  // UP_RIGHT (diagonal) [112*2]
+            }
+        }
     } else {  // Lower half
-    if (deltaX < 0) {  // Lower-left quadrant
-    if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
-    direction = 32;  // DOWN (largely vertical)
-    } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
-    direction = 64;  // LEFT (largely horizontal)
-    } else {
-    direction = 48;  // DOWN_LEFT (diagonal)
-    }
-    } else {  // Lower-right quadrant
-    if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
-    direction = 32;  // DOWN (largely vertical)
-    } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
-    direction = 0;   // RIGHT (largely horizontal)
-    } else {
-    direction = 16;  // DOWN_RIGHT (diagonal)
-    }
-    }
+        if (deltaX < 0) {  // Lower-left quadrant
+            if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
+                direction = 64;   // DOWN (largely vertical) [32*2]
+            } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
+                direction = 128;  // LEFT (largely horizontal) [64*2]
+            } else {
+                direction = 96;   // DOWN_LEFT (diagonal) [48*2]
+            }
+        } else {  // Lower-right quadrant
+            if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
+                direction = 64;   // DOWN (largely vertical) [32*2]
+            } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
+                direction = 0;    // RIGHT (largely horizontal) [0*2]
+            } else {
+                direction = 32;   // DOWN_RIGHT (diagonal) [16*2]
+            }
+        }
     }
 
     return direction;
@@ -1767,13 +1766,13 @@ char RandomDirection(void) {
     
     // Convert to the 128-direction system directly
     // These values are at 45-degree intervals (0, 16, 32, 48, 64, 80, 96, 112)
-    char newDirection = dirIndex << 4; // Multiply by 16
+    char newDirection = dirIndex << 5; // Multiply by 16
     
     // Avoid repeating the last direction
     if (newDirection == lastRandomDirection) {
         // Simple increment with wrap around (to next 45-degree direction)
         dirIndex = (dirIndex + 1) & 0x07;
-        newDirection = dirIndex << 4;
+        newDirection = dirIndex << 5;
     }
     
     // Store this direction for next time
