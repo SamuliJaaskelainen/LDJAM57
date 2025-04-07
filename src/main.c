@@ -57,7 +57,6 @@ void MoveBulletDown(char i, char j);
 void MoveBulletLeft(char i, char j);
 void MoveBulletRight(char i, char j);
 
-
 // Roar
 void Roar(char i);
 
@@ -273,12 +272,14 @@ void LoadTitleScreen(void)
     SMS_printatXY(7, 18, "during gameplay!");
     // Loading complete, start display
     SMS_displayOn();
+
+    SMS_mapROMBank(kaijulike_psg_bank);
+    PSGPlay(&kaijulike_psg);
 }
 
 void LoadStoryScreen(void)
 {
     gameState = GAME_STATE_STORY;
-    StopAllAudio();
 
     // Setup VPD
     SMS_VRAMmemsetW(0, 0, 0);
@@ -336,11 +337,16 @@ void LoadEndScreen(void)
     
     // Loading complete, start display
     SMS_displayOn();
+
+    SMS_mapROMBank(kaijulike_psg_bank);
+    PSGPlay(&kaijulike_psg);
 }
 
 void LoadGameScreen(void)
 {
     gameState = GAME_STATE_GAME;
+
+    StopAllAudio();
 
     // Setup VDP
     SMS_displayOff();
@@ -913,7 +919,7 @@ void UpdatePlayer(char i)
 
         if(*metatile == METATILE_MINE)
         {
-            *metatile = METATILE_GRASS;
+            *metatile = METATILE_MINE_HOLE;
             GSL_metatileUpdate();
             StunPlayer(i);
         }

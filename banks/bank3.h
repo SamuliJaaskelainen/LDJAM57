@@ -19,3 +19,6 @@ extern const unsigned char	black_palette_bin[17];
 extern const unsigned char	font_tiles_bin[3040];
 #define				font_tiles_bin_size 3040
 #define				font_tiles_bin_bank 3
+extern const unsigned char	kaijulike_psg[1189];
+#define				kaijulike_psg_size 1189
+#define				kaijulike_psg_bank 3

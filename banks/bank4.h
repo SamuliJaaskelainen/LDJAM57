@@ -1,5 +1,5 @@
-extern const unsigned char	ugtbatch_tiles_bin[10496];
-#define				ugtbatch_tiles_bin_size 10496
+extern const unsigned char	ugtbatch_tiles_bin[11104];
+#define				ugtbatch_tiles_bin_size 11104
 #define				ugtbatch_tiles_bin_bank 4
 extern const unsigned char	pollen_tiles_bin[128];
 #define				pollen_tiles_bin_size 128
