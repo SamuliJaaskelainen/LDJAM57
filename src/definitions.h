@@ -272,6 +272,51 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define METATILE_ROAD_11     1
 #define METATILE_ROAD_11_C     1
 
+#define METATILE_BARREL_01     1
+#define METATILE_BARREL_01_C     1
+#define METATILE_BARREL_02     1
+#define METATILE_BARREL_02_C     1
+#define METATILE_BARREL_03     1
+#define METATILE_BARREL_03_C     1
+#define METATILE_BARREL_04     1
+#define METATILE_BARREL_04_C     1
+#define METATILE_BARREL_05     1
+#define METATILE_BARREL_05_C     1
+#define METATILE_BARREL_06     1
+#define METATILE_BARREL_06_C     1
+#define METATILE_BARREL_07     1
+#define METATILE_BARREL_07_C     1
+#define METATILE_BARREL_08     1
+#define METATILE_BARREL_08_C     1
+#define METATILE_BARREL_09     1
+#define METATILE_BARREL_09_C     1
+
+#define METATILE_CAR_01     1
+#define METATILE_CAR_01_C     1
+#define METATILE_CAR_02     1
+#define METATILE_CAR_02_C     1
+#define METATILE_CAR_03     1
+#define METATILE_CAR_03_C     1
+
+#define METATILE_SILO_01     1
+#define METATILE_SILO_01_C     1
+#define METATILE_SILO_02     1
+#define METATILE_SILO_02_C     1
+#define METATILE_SILO_03     1
+#define METATILE_SILO_03_C     1
+
+#define METATILE_STUMP_01     1
+#define METATILE_STUMP_01_C     1
+#define METATILE_STUMP_02     1
+#define METATILE_STUMP_02_C     1
+
+#define METATILE_HOUSE_01     1
+#define METATILE_HOUSE_01_C     1
+#define METATILE_HOUSE_02     1
+#define METATILE_HOUSE_02_C     1
+#define METATILE_HOUSE_03     1
+#define METATILE_HOUSE_03_C     1
+
 #define METATILE_WALL_01     1
 #define METATILE_WALL_01_C     1
 #define METATILE_WALL_02     1
@@ -304,51 +349,6 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define METATILE_WALL_15_C     1
 #define METATILE_WALL_16     1
 #define METATILE_WALL_16_C     1
-
-#define METATILE_BARREL_01     1
-#define METATILE_BARREL_01_C     1
-#define METATILE_BARREL_02     1
-#define METATILE_BARREL_02_C     1
-#define METATILE_BARREL_03     1
-#define METATILE_BARREL_03_C     1
-#define METATILE_BARREL_04     1
-#define METATILE_BARREL_04_C     1
-#define METATILE_BARREL_05     1
-#define METATILE_BARREL_05_C     1
-#define METATILE_BARREL_06     1
-#define METATILE_BARREL_06_C     1
-#define METATILE_BARREL_07     1
-#define METATILE_BARREL_07_C     1
-#define METATILE_BARREL_08     1
-#define METATILE_BARREL_08_C     1
-#define METATILE_BARREL_09     1
-#define METATILE_BARREL_09_C     1
-
-#define METATILE_CAR_01     1
-#define METATILE_CAR_01_C     1
-#define METATILE_CAR_02     1
-#define METATILE_CAR_02_C     1
-#define METATILE_CAR_03     1
-#define METATILE_CAR_03_C     1
-
-#define METATILE_HOUSE_01     1
-#define METATILE_HOUSE_01_C     1
-#define METATILE_HOUSE_02     1
-#define METATILE_HOUSE_02_C     1
-#define METATILE_HOUSE_03     1
-#define METATILE_HOUSE_03_C     1
-
-#define METATILE_SILO_01     1
-#define METATILE_SILO_01_C     1
-#define METATILE_SILO_02     1
-#define METATILE_SILO_02_C     1
-#define METATILE_SILO_03     1
-#define METATILE_SILO_03_C     1
-
-#define METATILE_STUMP_01     1
-#define METATILE_STUMP_01_C     1
-#define METATILE_STUMP_02     1
-#define METATILE_STUMP_02_C     1
 
 #define METATILE_FOREST_01     1
 #define METATILE_FOREST_01_C     1
@@ -387,8 +387,8 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define SECTOR_SIZE                 256 // Size in pixels for subdividing the map into sectors
 #define MAX_SECTORS                 16 // 1024x1024 map becomes 4x4 sectors
 #define MAX_FACTORY_NUM             5
-#define MAX_TILE_PAIRS_WALKABLE     2
-#define MAX_TILE_PAIRS_SHOOTABLE    2
+#define MAX_TILE_PAIRS_WALKABLE     30
+#define MAX_TILE_PAIRS_SHOOTABLE    37
 #define MAX_TURRETS_PER_SECTOR      8
 
 // Player Defines
