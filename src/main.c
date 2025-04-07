@@ -121,8 +121,8 @@ unsigned char lastRandomDirection = 0;
 // Gamestate and counters
 unsigned char gameState = GAME_STATE_GAME;
 unsigned char numFactories = MAX_FACTORY_NUM; // when this reaches 0, game is won
-unsigned char numFactoriesSpriteIdOne = 0;
-unsigned char numFactoriesSpriteIdTwo = 0;
+unsigned int numFactoriesSpriteIdOne = 0;
+unsigned int numFactoriesSpriteIdTwo = 0;
 unsigned char menuButtonPressed = 0;
 unsigned char menuStartFlasher = 0;
 unsigned char menuStartVisible = 0;
@@ -316,13 +316,13 @@ void LoadGameScreen(void)
     SMS_mapROMBank(ugtbatch_tiles_bin_bank);
     SMS_loadTiles(&ugtbatch_tiles_bin, 0, ugtbatch_tiles_bin_size);
     SMS_mapROMBank(pollen_tiles_bin_bank);
-    SMS_loadTiles(&pollen_tiles_bin, 264, pollen_tiles_bin_size);
+    SMS_loadTiles(&pollen_tiles_bin, SPRITE_VRAM_OFFSET + 8, pollen_tiles_bin_size);
     SMS_mapROMBank(bullet_tiles_bin_bank);
-    SMS_loadTiles(&bullet_tiles_bin, 268, bullet_tiles_bin_size);
+    SMS_loadTiles(&bullet_tiles_bin, SPRITE_VRAM_OFFSET + 12, bullet_tiles_bin_size);
     SMS_mapROMBank(factory_tiles_bin_bank);
-    SMS_loadTiles(&factory_tiles_bin, 270, factory_tiles_bin_size);
+    SMS_loadTiles(&factory_tiles_bin, SPRITE_VRAM_OFFSET + 14, factory_tiles_bin_size);
     SMS_mapROMBank(spritenumbers_tiles_bin_bank);
-    SMS_loadTiles(&spritenumbers_tiles_bin, 274, spritenumbers_tiles_bin_size);
+    SMS_loadTiles(&spritenumbers_tiles_bin, SPRITE_VRAM_OFFSET + 18, spritenumbers_tiles_bin_size);
 
     // Setup scrolltable
     SMS_mapROMBank(ugtbatch_scrolltable_bin_bank);
@@ -351,9 +351,9 @@ void LoadGameScreen(void)
         playersSprites[i].animationFrameDataCount = 4;
         setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
         playersSprites[i].direction = DIRECTION_DOWN;
-        players[i].ramDataAddress = i == 0 ? 8192 : 8320;
-        playersSprites[i].spriteOneIndex = i << 2;
-        playersSprites[i].spriteTwoIndex = 2 + (i << 2);
+        players[i].ramDataAddress = i == 0 ? (SPRITE_VRAM_OFFSET << 5) : (SPRITE_VRAM_OFFSET << 5) + 130;
+        playersSprites[i].spriteOneIndex = SPRITE_VRAM_OFFSET + (i << 2);
+        playersSprites[i].spriteTwoIndex = SPRITE_VRAM_OFFSET + (2 + (i << 2)) ;
         players[i].action = ACTION_STATIONARY;
         players[i].actionCount = 0;
         players[i].actionOnePressed = 0;
@@ -370,8 +370,8 @@ void LoadGameScreen(void)
             players[i].bullets[j].size = 16;
             players[i].bullets[j].speed = 4;
             players[i].bullets[j].direction = DIRECTION_DOWN;
-            players[i].bullets[j].spriteOneIndex = 8;
-            players[i].bullets[j].spriteTwoIndex = 10;
+            players[i].bullets[j].spriteOneIndex = SPRITE_VRAM_OFFSET + 8;
+            players[i].bullets[j].spriteTwoIndex = SPRITE_VRAM_OFFSET + 10;
         }
     }
 
@@ -387,7 +387,7 @@ void LoadGameScreen(void)
         enemyBullets[i].size = 14;
         enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
         enemyBullets[i].direction = DIRECTION_DOWN;
-        enemyBullets[i].spriteOneIndex = 12;
+        enemyBullets[i].spriteOneIndex = SPRITE_VRAM_OFFSET + 12;
         enemyBullets[i].spriteTwoIndex = 0;
         
         // Initialize the subpixel movement variables
@@ -551,8 +551,8 @@ void RenderSprites(void)
     }
 
     // Render UI, shared between players
-    SMS_addSprite(UI_X, UI_Y, 270);
-    SMS_addSprite(UI_X + 8, UI_Y, 272);
+    SMS_addSprite(UI_X, UI_Y, FONT_VRAM_OFFSET + 14);
+    SMS_addSprite(UI_X + 8, UI_Y, FONT_VRAM_OFFSET + 14);
 
     if(numFactories > 9)
     {
@@ -578,12 +578,12 @@ void UpdateNumFactoriesSpriteIds(void)
             digits[0]++;
         }
         digits[1] = splitter;
-        numFactoriesSpriteIdOne = 274 + (digits[0] << 1);
-        numFactoriesSpriteIdTwo = 274 + (digits[1] << 1);
+        numFactoriesSpriteIdOne = SPRITE_VRAM_OFFSET + 18 + (digits[0] << 1);
+        numFactoriesSpriteIdTwo = SPRITE_VRAM_OFFSET + 18 + (digits[1] << 1);
     }
     else
     {
-        numFactoriesSpriteIdOne = 274 + (numFactories << 1);
+        numFactoriesSpriteIdOne = SPRITE_VRAM_OFFSET + 18 + (numFactories << 1);
     }
 }
 

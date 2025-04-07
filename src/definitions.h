@@ -192,12 +192,15 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define ACTION_STUN  			4
 
 // Metatile Defines (update these when map is exported)
-#define METATILE_FACTORY            26
-#define METATILE_FACTORY_CLAIMED    50
-#define METATILE_TURRET             17
-#define METATILE_TURRET_DEAD        3
-#define METATILE_GRASS              105
-#define METATILE_FLOWERS            234
+#define METATILE_FACTORY            21
+#define METATILE_FACTORY_CLAIMED    85
+#define METATILE_TURRET             94
+#define METATILE_TURRET_DEAD        89
+#define METATILE_GRASS              190
+#define METATILE_FLOWERS            14
+#define METATILE_MINE               92
+#define METATILE_MINE_CONVERTED     142
+
 
 // Map Data
 #define SECTOR_SIZE                 256 // Size in pixels for subdividing the map into sectors
@@ -270,7 +273,8 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define SFX_ROAR                5
 #define SFX_PLAYER_SHOOT        6
 
-// Menus
+// Data loading offsets
 #define FONT_VRAM_OFFSET 320
+#define SPRITE_VRAM_OFFSET 352
 
 #endif /* DEFINITIONS_H */

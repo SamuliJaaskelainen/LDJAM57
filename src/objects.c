@@ -15,8 +15,8 @@ struct SpriteObject
     unsigned char animationFrameDataCount;
     unsigned int animationFrameData[8];
     unsigned char direction;
-    unsigned char spriteOneIndex;
-    unsigned char spriteTwoIndex;
+    unsigned int spriteOneIndex;
+    unsigned int spriteTwoIndex;
     
     // New fields for subpixel movement (enemy bullets only)
     unsigned char subpixelX;        // Fractional part of X position (0-255)

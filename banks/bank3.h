@@ -1,5 +1,5 @@
-extern const unsigned char	ugtbatch_metatiles_bin[1128];
-#define				ugtbatch_metatiles_bin_size 1128
+extern const unsigned char	ugtbatch_metatiles_bin[1752];
+#define				ugtbatch_metatiles_bin_size 1752
 #define				ugtbatch_metatiles_bin_bank 3
 extern const unsigned char	player_tiles_bin[6144];
 #define				player_tiles_bin_size 6144
