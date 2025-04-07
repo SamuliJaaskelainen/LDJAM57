@@ -79,6 +79,7 @@ char ShootTurretBullet(char turretIndex, char direction);
 int abs_delta(int delta);
 char RandomDirection(void);
 char GetClockwiseDirection(struct TurretInfo *turret);
+unsigned char GetClockwiseDirection256(struct TurretInfo *turret);
 char GetCounterClockwiseDirection(struct TurretInfo *turret);
 
 unsigned char nextRandomByte(void);
@@ -1887,6 +1888,18 @@ char GetClockwiseDirection(struct TurretInfo *turret) {
 
     // Wrap around if it exceeds 224 (7 * 32)
     if (turret->lastDirectionFired > 224) {
+        turret->lastDirectionFired = 0;
+    }
+
+    return turret->lastDirectionFired;
+}
+
+// Helper function to get a direction in clockwise order using the 256-direction system
+unsigned char GetClockwiseDirection256(struct TurretInfo *turret) {
+    // Increment the last direction by 32 (45 degrees in the 256-direction system)
+    turret->lastDirectionFired ++;
+
+    if (turret->lastDirectionFired > 255) {
         turret->lastDirectionFired = 0;
     }
 
