@@ -74,7 +74,7 @@ struct TurretInfo turrets[MAX_ACTIVE_TURRETS];
 // const Array for pseudo-random turret fire mode
 const unsigned char turretFireModeDistro[10] =
 {
-    0, 3, 3, 0, 3, 3, 1, 0, 3, 0
+    0, 3, 3, 1, 3, 3, 3, 0, 3, 2
 };
 
 // struct for tile normal/flower versions
