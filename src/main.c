@@ -1540,18 +1540,19 @@ void ScanMapForTurrets(void)
     char color = 0; 
     char colorChangeCounter = 0;
 
-    // Loop through the entire map in metatile steps
-    for (unsigned int y = 0; y < mapHeight; y += 8)
+    // Loop through the map in 16-pixel steps (instead of 8)
+    for (unsigned int y = 0; y < mapHeight; y += 16)
     {
         colorChangeCounter++;
-        if(colorChangeCounter > 15)
+        if(colorChangeCounter > 8)
         {
             color++;
             SMS_setColor(color);
             SMS_setNextSpriteColoratIndex(0);
+            colorChangeCounter = 0;
         }
 
-        for (unsigned int x = 0; x < mapWidth; x += 8)
+        for (unsigned int x = 0; x < mapWidth; x += 16)
         {
             // Get the metatile at this position
             unsigned char *metatile = GSL_metatileLookup(x, y);
@@ -1574,11 +1575,8 @@ void ScanMapForTurrets(void)
         }
     }
     
-    // If we found fewer turrets than the maximum allowed, mark the rest as destroyed
-    // for (char i = activeTurretCount; i < MAX_ACTIVE_TURRETS; i++) {
-    //     turrets[i].isActive = 0;
-    //     turrets[i].isDestroyed = 1;
-    // }
+    // Reset the color after scanning is complete
+    SMS_setColor(0);
 }
 
 void CheckTurretsInBoundingBox(void)
