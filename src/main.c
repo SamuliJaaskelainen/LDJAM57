@@ -1608,12 +1608,12 @@ void CheckTurretsInBoundingBox(void)
     unsigned int viewportRight = viewportLeft + SCREEN_WIDTH;
     unsigned int viewportBottom = viewportTop + SCREEN_HEIGHT;
     
-    // Add a small margin around the viewport to activate turrets slightly off-screen
-    unsigned int activationLeft = (viewportLeft > 8) ? (viewportLeft - 8) : 0;
-    unsigned int activationRight = viewportRight + 8;
-    unsigned int activationTop = (viewportTop > 8) ? (viewportTop - 8) : 0;
-    unsigned int activationBottom = viewportBottom + 8;
-    
+    // Add a small margin around the viewport to activate turrets just after they appear on screen.
+    unsigned int activationLeft = viewportLeft + 4;
+    unsigned int activationRight = viewportRight - 4;
+    unsigned int activationTop = viewportTop + 2;
+    unsigned int activationBottom = viewportBottom - 2;
+
     // Prevent right/bottom from exceeding map boundaries
     unsigned int mapWidth = GSL_getMapWidthInPixels();
     unsigned int mapHeight = GSL_getMapHeightInPixels();
@@ -1705,45 +1705,59 @@ void UpdateTurrets(void)
     }
 }
 
-char ShootTurretBullet(char turretIndex, char direction)
-{
-    // Look for a free enemy bullet
-    for (char i = 0; i < ENEMY_BULLET_COUNT; i++)
-    {
-        if (!enemyBullets[i].isVisible)
-        {
-            // Found a free bullet, initialize it
-            enemyBullets[i].isVisible = 1;
+char ShootTurretBullet(char turretIndex, char oldDirection) {
+    // Find free bullet slot
+    for (char i = 0; i < ENEMY_BULLET_COUNT; i++) {
+        if (!enemyBullets[i].isVisible) {
+            // Convert from old 8-direction to new 128-direction system
+            unsigned char newDirection = ConvertOldDirectionToNew(oldDirection);
             
-            // Store coordinates
+            // Initialize position
+            enemyBullets[i].isVisible = 1;
             enemyBullets[i].positionX = turrets[turretIndex].positionX + 8;
             enemyBullets[i].positionY = turrets[turretIndex].positionY + 8;
             enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
             enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
             
-            // Set default speed based on direction (diagonal is slower)
-            if (direction == DIRECTION_UP_LEFT || direction == DIRECTION_UP_RIGHT || 
-                direction == DIRECTION_DOWN_LEFT || direction == DIRECTION_DOWN_RIGHT) {
-                enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT / 2;
+            // Reset subpixel components
+            enemyBullets[i].subpixelX = 0;
+            enemyBullets[i].subpixelY = 0;
+            
+            // Get vector components directly from the lookup tables
+            DirectionVector vector;
+            GetDirectionVector(newDirection, &vector);
+            
+            // Adjust speed based on direction (diagonal or cardinal)
+            if (directionFlags[newDirection] & DIRECTION_FLAG_DIAGONAL) {
+                // For diagonals, scale down by about 0.7 (approximately 181/256)
+                // We apply the scaling by working with the vector components
+                enemyBullets[i].velocityX = (vector.x * 181) >> 8;
+                enemyBullets[i].velocityY = (vector.y * 181) >> 8;
+                
+                // Store fractional parts
+                enemyBullets[i].velocityX_frac = (vector.x * 181) & 0xFF;
+                enemyBullets[i].velocityY_frac = (vector.y * 181) & 0xFF;
             } else {
-                enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+                // For cardinal directions, use full speed
+                enemyBullets[i].velocityX = vector.x >> 8;
+                enemyBullets[i].velocityY = vector.y >> 8;
+                enemyBullets[i].velocityX_frac = vector.x & 0xFF;
+                enemyBullets[i].velocityY_frac = vector.y & 0xFF;
             }
             
-            // Set the direction from the parameter
-            enemyBullets[i].direction = direction;
+            // Store the original direction value for compatibility
+            enemyBullets[i].direction = oldDirection;
             
-            // Sound effect if on screen
+            // Play sound effect if bullet is on screen
             if (enemyBullets[i].spriteX >= 8 && enemyBullets[i].spriteX <= SCREEN_WIDTH - 8 &&
-                enemyBullets[i].spriteY >= 8 && enemyBullets[i].spriteY <= SCREEN_HEIGHT - 8)
-            {
+                enemyBullets[i].spriteY >= 8 && enemyBullets[i].spriteY <= SCREEN_HEIGHT - 8) {
                 LoadAndPlaySFX(SFX_ENEMY_SHOOT);
             }
             
-            return i; // Return the index of the created bullet
+            return i;
         }
     }
-    
-    return -1; // Return -1 if no bullet was created
+    return -1;
 }
 
 // Helper function to get a random direction (1-8), should not return same direction twice in a row
