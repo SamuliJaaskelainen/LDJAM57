@@ -1480,8 +1480,9 @@ void InitTurrets(void) {
         turrets[i].isActive = 1;
         turrets[i].isDestroyed = 0;
         turrets[i].shootTimer = 0;
-        // Default to random shooting
-        turrets[i].fireMode = 4;
+        // select fire mode based on index, if index is greater than fire mode count array (10), loop back to 0
+        turrets[i].fireMode = turretFireModeDistro[i % 10];
+
     }
 }
 
@@ -1745,8 +1746,22 @@ void UpdateTurrets(void)
                     direction = GetCounterClockwiseDirection(&turrets[i]);
                         break;
 
+                    case 3: // Player-targeted mode, exactly where player is standing
+                        {
+                            char playerIndex = GetClosestPlayer(turrets[i].positionX, turrets[i].positionY);
+                                
+                            // Calculate direction to that player
+                            direction = GetPreciseFireDirection(
+                                turrets[i].positionX, 
+                                turrets[i].positionY,
+                                playersSprites[playerIndex].positionX, 
+                                playersSprites[playerIndex].positionY
+                            );
+                        }
+                        break;
+
                         
-                    case 3: // Player-targeted mode, direction but imprecise
+                    case 4: // Player-targeted mode, direction but imprecise
                         {
                             // Get the closest player
                             char playerIndex = GetClosestPlayer(turrets[i].positionX, turrets[i].positionY);
@@ -1760,20 +1775,6 @@ void UpdateTurrets(void)
                             );
                         }
                         break;
-
-                    case 4: // Player-targeted mode, exactly where player is standing
-                    {
-                        char playerIndex = GetClosestPlayer(turrets[i].positionX, turrets[i].positionY);
-                            
-                        // Calculate direction to that player
-                        direction = GetPreciseFireDirection(
-                            turrets[i].positionX, 
-                            turrets[i].positionY,
-                            playersSprites[playerIndex].positionX, 
-                            playersSprites[playerIndex].positionY
-                        );
-                    }
-                    break;
                         
                     default: // Fallback to random
                         direction = RandomDirection();

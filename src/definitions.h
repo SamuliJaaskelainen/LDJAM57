@@ -468,7 +468,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 // Enemy Defines
 #define ENEMY_BULLET_COUNT          6
 #define ENEMY_BULLET_SPEED_DEFAULT  2
-#define MAX_ACTIVE_TURRETS          8
+#define MAX_ACTIVE_TURRETS          16
 #define TURRET_SHOOT_RATE           30
 #define TURRET_SCAN_INTERVAL        60  // Scan every 60 frames
 
