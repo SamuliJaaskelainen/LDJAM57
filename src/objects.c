@@ -86,7 +86,7 @@ const struct TilePair walkableTilePairs[MAX_TILE_PAIRS_WALKABLE] =
 const struct TilePair shootableTilePairs[MAX_TILE_PAIRS_SHOOTABLE] =
 {
     {METATILE_TURRET, METATILE_FACTORY_CLAIMED},  
-    {0, 0}
+    {METATILE_MINE, METATILE_MINE_CONVERTED}
 };
 
 // Sprite Animation and Collision Functions Start

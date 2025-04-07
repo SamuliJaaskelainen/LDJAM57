@@ -16,6 +16,7 @@ void UpdatePlayerAnimations(char i);
 void UpdatePlayer(char i);
 void MovePlayerNoCollision(char i);
 void MovePlayer(char i);
+void StunPlayer(char i);
 void MoveUp(char i);
 void MoveDown(char i);
 void MoveLeft(char i);
@@ -837,7 +838,22 @@ void UpdatePlayer(char i)
         // Check metatile stepped on
         unsigned char *metatile = GSL_metatileLookup(playersSprites[i].positionX, playersSprites[i].positionY);
         MetatileSwapWalkable(metatile);
+
+        if(*metatile == METATILE_MINE)
+        {
+            *metatile = METATILE_GRASS;
+            GSL_metatileUpdate();
+            StunPlayer(i);
+        }
     }
+}
+
+void StunPlayer(char i)
+{
+    LoadAndPlaySFX(SFX_EXPLOSION);
+    players[i].action = ACTION_STUN;
+    players[i].actionCount = PLAYER_STUN_FRAME_COUNT;
+    players[i].actionFrame = 99;
 }
 
 void MetatileSwapWalkable(unsigned char *metatile)
@@ -1283,11 +1299,16 @@ void UpdateBullets(char i)
                 players[i].bullets[j].isVisible = 0;
                 continue;
             }
-            else if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
+            else 
             {
-                // Hit wall!
-                players[i].bullets[j].isVisible = 0;
-                continue;
+                MetatileSwapShootable(metatile);
+
+                if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
+                {
+                    // Hit wall!
+                    players[i].bullets[j].isVisible = 0;
+                    continue;
+                }
             }
         }
     }
@@ -1347,10 +1368,7 @@ void UpdateEnemyBullets(void)
                     {
                         if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
                         {
-                            LoadAndPlaySFX(SFX_EXPLOSION);
-                            players[j].action = ACTION_STUN;
-                            players[j].actionCount = PLAYER_STUN_FRAME_COUNT;
-                            players[j].actionFrame = 99;
+                            StunPlayer(j);
                             enemyBullets[i].isVisible = 0;
                             continue;
                         }
