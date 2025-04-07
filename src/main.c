@@ -78,6 +78,7 @@ char ShootTurretBullet(char turretIndex, char direction);
 // Helper Functions
 int abs_delta(int delta);
 char RandomDirection(void);
+char GetClockwiseDirection(struct TurretInfo *turret);
 
 unsigned char nextRandomByte(void);
 
@@ -123,6 +124,7 @@ unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
 // Turret Scanning and Bullet Behavior
 unsigned char turretCheckIndex = 0;
 unsigned char lastRandomDirection = 0;
+unsigned char lastClockwiseDirection = 0;
 
 // Gamestate and counters
 unsigned char gameState = GAME_STATE_GAME;
@@ -1477,7 +1479,7 @@ void InitTurrets(void) {
         turrets[i].isDestroyed = 0;
         turrets[i].shootTimer = 0;
         // Default to random shooting
-        turrets[i].fireMode = 2;
+        turrets[i].fireMode = 1;
     }
 }
 
@@ -1732,8 +1734,17 @@ void UpdateTurrets(void)
                     case 0: // Random firing mode
                         direction = RandomDirection();
                         break;
+
+                    case 1: // Clockwise firing mode
+                        direction = GetClockwiseDirection(&turrets[i]);
+                        break;
+                    
+                    case 2: // CounterClockwise firing mode
+                        direction = RandomDirection();
+                        break;
+
                         
-                    case 1: // Player-targeted mode, direction but imprecise
+                    case 3: // Player-targeted mode, direction but imprecise
                         {
                             // Get the closest player
                             char playerIndex = GetClosestPlayer(turrets[i].positionX, turrets[i].positionY);
@@ -1748,7 +1759,7 @@ void UpdateTurrets(void)
                         }
                         break;
 
-                    case 2: // Player-targeted mode, exactly where player is standing
+                    case 4: // Player-targeted mode, exactly where player is standing
                     {
                         direction = RandomDirection(); // currently not implemented
                     }
@@ -1843,9 +1854,9 @@ char RandomDirection(void) {
     // Use the low 3 bits (0-7) to get a value between 0-7
     unsigned char dirIndex = randomValue & 0x07;
     
-    // Convert to the 128-direction system directly
-    // These values are at 45-degree intervals (0, 16, 32, 48, 64, 80, 96, 112)
-    char newDirection = dirIndex << 5; // Multiply by 16
+    // Convert to the 256-direction system directly
+    // These values are at 45-degree intervals (0, 32, 64, 96, 128, 160, 192, 224)
+    char newDirection = dirIndex << 5; // Multiply by 32
     
     // Avoid repeating the last direction
     if (newDirection == lastRandomDirection) {
@@ -1860,7 +1871,18 @@ char RandomDirection(void) {
     return newDirection;
 }
 
+// Helper function to get a direction in clockwise order using the 256-direction system
+char GetClockwiseDirection(struct TurretInfo *turret) {
+    // Increment the last direction by 32 (45 degrees in the 256-direction system)
+    turret->lastDirectionFired += 32;
 
+    // Wrap around if it exceeds 224 (7 * 32)
+    if (turret->lastDirectionFired > 224) {
+        turret->lastDirectionFired = 0;
+    }
+
+    return turret->lastDirectionFired;
+}
 // Pseudo-random number generator helper
 unsigned char nextRandomByte(void) {
     static unsigned char seed = 127; // Initial seed value

@@ -61,10 +61,11 @@ struct TurretInfo {
     unsigned int positionY;
     
     // State
-    unsigned char isActive;   // 1 if currently active (shooting), 0 otherwise
-    unsigned char isDestroyed; // 1 if permanently destroyed
+    unsigned char isActive;         // 1 if currently active (shooting), 0 otherwise
+    unsigned char isDestroyed;      // 1 if permanently destroyed
     unsigned char shootTimer;
-    unsigned char fireMode;   // 0=random, 1=player targeted
+    unsigned char fireMode;         // 0=random, 1=player targeted
+    unsigned char lastDirectionFired; // Tracks the last direction fired (0-255)
 };
 
 // Array to track active turrets
