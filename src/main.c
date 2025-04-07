@@ -1553,67 +1553,60 @@ char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY,
     deltaY = -(sourceY - targetY);
     }
 
-    // Determine octant (0-7) based on deltas
-    char octant;
+    // Get absolute values
+    unsigned int absDeltaX = deltaX < 0 ? -deltaX : deltaX;
+    unsigned int absDeltaY = deltaY < 0 ? -deltaY : deltaY;
 
-    // First determine quadrant
-    if (deltaY < 0) {
-    if (deltaX < 0) {
-    // Upper-left quadrant
-    if (abs_delta(deltaY) > abs_delta(deltaX) * 2) {
-    octant = 6; // Mostly up
-    } else if (abs_delta(deltaX) > abs_delta(deltaY) * 2) {
-    octant = 4; // Mostly left
-    } else {
-    octant = 5; // Diagonal up-left
+    // Use bit shifting for comparing magnitudes
+    // This avoids division and multiplication
+    // Check if absDeltaY > absDeltaX
+    char verticalDominant = 0;
+    if (absDeltaY > absDeltaX) {
+    verticalDominant = 1;
     }
-    } else {
-    // Upper-right quadrant
-    if (abs_delta(deltaY) > abs_delta(deltaX) * 2) {
-    octant = 6; // Mostly up
-    } else if (abs_delta(deltaX) > abs_delta(deltaY) * 2) {
-    octant = 0; // Mostly right
-    } else {
-    octant = 7; // Diagonal up-right
-    }
-    }
-    } else {
-    if (deltaX < 0) {
-    // Lower-left quadrant
-    if (abs_delta(deltaY) > abs_delta(deltaX) * 2) {
-    octant = 2; // Mostly down
-    } else if (abs_delta(deltaX) > abs_delta(deltaY) * 2) {
-    octant = 4; // Mostly left
-    } else {
-    octant = 3; // Diagonal down-left
-    }
-    } else {
-    // Lower-right quadrant
-    if (abs_delta(deltaY) > abs_delta(deltaX) * 2) {
-    octant = 2; // Mostly down
-    } else if (abs_delta(deltaX) > abs_delta(deltaY) * 2) {
-    octant = 0; // Mostly right
-    } else {
-    octant = 1; // Diagonal down-right
-    }
-    }
-}
 
-// Map octant to corresponding direction in 128-direction system
-// Using the existing mapping from directionTo128 where possible
-// 0 = RIGHT (0°), 16 = DOWN_RIGHT (45°), 32 = DOWN (90°), etc.
-const unsigned char octantToDirection[8] = {
-0,    // RIGHT
-16,   // DOWN_RIGHT
-32,   // DOWN
-48,   // DOWN_LEFT
-64,   // LEFT
-80,   // UP_LEFT
-96,   // UP
-112   // UP_RIGHT
-};
+    // Determine the octant (direction) based on quadrant and dominant axis
+    char direction;
 
-return octantToDirection[octant];
+    if (deltaY < 0) {  // Upper half
+    if (deltaX < 0) {  // Upper-left quadrant
+    if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
+    direction = 96;  // UP (largely vertical)
+    } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
+    direction = 64;  // LEFT (largely horizontal)
+    } else {
+    direction = 80;  // UP_LEFT (diagonal)
+    }
+    } else {  // Upper-right quadrant
+    if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
+    direction = 96;  // UP (largely vertical)
+    } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
+    direction = 0;   // RIGHT (largely horizontal)
+    } else {
+    direction = 112; // UP_RIGHT (diagonal)
+    }
+    }
+    } else {  // Lower half
+    if (deltaX < 0) {  // Lower-left quadrant
+    if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
+    direction = 32;  // DOWN (largely vertical)
+    } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
+    direction = 64;  // LEFT (largely horizontal)
+    } else {
+    direction = 48;  // DOWN_LEFT (diagonal)
+    }
+    } else {  // Lower-right quadrant
+    if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
+    direction = 32;  // DOWN (largely vertical)
+    } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
+    direction = 0;   // RIGHT (largely horizontal)
+    } else {
+    direction = 16;  // DOWN_RIGHT (diagonal)
+    }
+    }
+    }
+
+    return direction;
 }
 
 // gets absolute value
