@@ -72,52 +72,53 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy);
 // Values are in 8.8 fixed-point format
 // Full circle is divided into 128 parts (0-127)
 
-// High bytes (integer part) of X vector components
+// High bytes (integer part) of X vector components (cosine)
 const signed char directionVectorXHigh[DIRECTION_GRANULAR_COUNT] = {
-    2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1,  // 0-15
-    1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 16-31
-    0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, // 32-47
-    -1, -1, -1, -1, -1, -1, -1, -1, -2, -2, -2, -2, -2, -2, -2, -2, // 48-63
-    -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1, -1, -1, -1, -1, -1, // 64-79
-    -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 80-95
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, // 96-111
-    1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2  // 112-127
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-// Low bytes (fractional part) of X vector components
+
+// Low bytes (fractional part) of X vector components (cosine)
 const unsigned char directionVectorXLow[DIRECTION_GRANULAR_COUNT] = {
-    0, 25, 50, 75, 99, 124, 148, 172, 195, 218, 240, 250, 10, 25, 40, 56,  // 0-15
-    71, 86, 101, 115, 130, 143, 156, 169, 181, 193, 204, 214, 224, 233, 241, 249, // 16-31
-    255, 5, 10, 15, 20, 24, 28, 31, 33, 36, 37, 39, 39, 40, 40, 39, // 32-47
-    38, 36, 33, 30, 26, 22, 17, 12, 6, 0, 249, 241, 233, 224, 214, 204, // 48-63
-    193, 181, 169, 156, 143, 130, 115, 101, 86, 71, 56, 40, 25, 10, 250, 240, // 64-79
-    218, 195, 172, 148, 124, 99, 75, 50, 25, 0, 231, 206, 181, 156, 132, 107, // 80-95
-    83, 59, 35, 12, 246, 223, 201, 178, 156, 134, 113, 92, 71, 50, 30, 10, // 96-111
-    246, 231, 217, 204, 190, 177, 164, 152, 139, 127, 115, 103, 92, 81, 70, 60 // 112-127
+    0, 255, 254, 253, 251, 248, 244, 241, 236, 231, 225, 219, 212, 205, 197, 189, 
+    181, 171, 162, 152, 142, 131, 120, 109, 97, 86, 74, 62, 49, 37, 25, 12, 
+    0, 244, 231, 219, 207, 194, 182, 170, 159, 147, 136, 125, 114, 104, 94, 85, 
+    75, 67, 59, 51, 44, 37, 31, 25, 20, 15, 12, 8, 5, 3, 2, 1, 
+    0, 1, 2, 3, 5, 8, 12, 15, 20, 25, 31, 37, 44, 51, 59, 67, 
+    75, 85, 94, 104, 114, 125, 136, 147, 159, 170, 182, 194, 207, 219, 231, 244, 
+    0, 12, 25, 37, 49, 62, 74, 86, 97, 109, 120, 131, 142, 152, 162, 171, 
+    181, 189, 197, 205, 212, 219, 225, 231, 236, 241, 244, 248, 251, 253, 254, 255
 };
 
-// High bytes (integer part) of Y vector components
+// High bytes (integer part) of Y vector components (sine)
 const signed char directionVectorYHigh[DIRECTION_GRANULAR_COUNT] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0-15
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 16-31
-    -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1, -1, -1, -1, -1, -1, // 32-47
-    -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, // 48-63
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, // 64-79
-    1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, // 80-95
-    2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, // 96-111
-    1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0  // 112-127
+    0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-// Low bytes (fractional part) of Y vector components
+// Low bytes (fractional part) of Y vector components (sine)
 const unsigned char directionVectorYLow[DIRECTION_GRANULAR_COUNT] = {
-    0, 239, 223, 206, 190, 172, 154, 136, 117, 98, 79, 60, 40, 21, 1, 237, // 0-15
-    217, 196, 176, 155, 134, 113, 92, 71, 50, 29, 8, 242, 221, 200, 179, 158, // 16-31
-    137, 115, 94, 72, 51, 29, 8, 242, 221, 199, 178, 156, 134, 112, 90, 68, // 32-47
-    46, 24, 2, 235, 213, 191, 169, 146, 124, 101, 78, 55, 32, 9, 242, 218, // 48-63
-    195, 171, 148, 124, 101, 77, 54, 30, 7, 239, 216, 192, 168, 145, 121, 98, // 64-79
-    74, 51, 27, 4, 237, 213, 190, 166, 143, 120, 97, 73, 50, 27, 3, 236, // 80-95
-    213, 189, 166, 142, 119, 95, 72, 49, 25, 2, 234, 211, 187, 163, 140, 116, // 96-111
-    93, 69, 46, 22, 254, 230, 206, 182, 158, 134, 111, 87, 63, 40, 16, 248 // 112-127
+    0, 244, 231, 219, 207, 194, 182, 170, 159, 147, 136, 125, 114, 104, 94, 85, 
+    75, 67, 59, 51, 44, 37, 31, 25, 20, 15, 12, 8, 5, 3, 2, 1, 
+    0, 1, 2, 3, 5, 8, 12, 15, 20, 25, 31, 37, 44, 51, 59, 67, 
+    75, 85, 94, 104, 114, 125, 136, 147, 159, 170, 182, 194, 207, 219, 231, 244, 
+    0, 12, 25, 37, 49, 62, 74, 86, 97, 109, 120, 131, 142, 152, 162, 171, 
+    181, 189, 197, 205, 212, 219, 225, 231, 236, 241, 244, 248, 251, 253, 254, 255, 
+    0, 255, 254, 253, 251, 248, 244, 241, 236, 231, 225, 219, 212, 205, 197, 189, 
+    181, 171, 162, 152, 142, 131, 120, 109, 97, 86, 74, 62, 49, 37, 25, 12
 };
 
 // Flags for each direction to quickly determine properties
@@ -150,7 +151,6 @@ unsigned char ConvertOldDirectionToNew(unsigned char oldDir) {
     return directionTo128[oldDir];
 }
 
-// Get direction vector components for a given direction
 void GetDirectionVector(unsigned char direction, DirectionVector* vector) {
     if (direction >= DIRECTION_GRANULAR_COUNT) {
         // Invalid direction, return zero vector
@@ -159,11 +159,10 @@ void GetDirectionVector(unsigned char direction, DirectionVector* vector) {
         return;
     }
     
-    // Combine high and low bytes to form fixed-point value
-    vector->x = (directionVectorXHigh[direction] << 8) | directionVectorXLow[direction];
-    vector->y = (directionVectorYHigh[direction] << 8) | directionVectorYLow[direction];
+    // Create vectors - using 16-bit signed ints with proper two's complement
+    vector->x = ((signed int)directionVectorXHigh[direction] << 8) | directionVectorXLow[direction];
+    vector->y = ((signed int)directionVectorYHigh[direction] << 8) | directionVectorYLow[direction];
 }
-
 // Get direction from a vector (dx, dy)
 // This is an approximation using octants for performance
 unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
