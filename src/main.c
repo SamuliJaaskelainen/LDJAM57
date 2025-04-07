@@ -51,14 +51,12 @@ char GetRightDownMetatile(char i);
 
 // Bullet Behavior
 void ShootBullet(char i);
-char ShootTurretBullet(char turretIndex, char direction);
 void UpdateBullets(char i);
 void MoveBulletUp(char i, char j);
 void MoveBulletDown(char i, char j);
 void MoveBulletLeft(char i, char j);
 void MoveBulletRight(char i, char j);
-void UpdateEnemyBullets(void);
-void UpdateEnemyBulletPosition(char i);
+
 
 // Roar
 void Roar(char i);
@@ -71,6 +69,11 @@ char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY,
                           unsigned int targetX, unsigned int targetY);
 void CheckTurretsInBoundingBox(void);
 void UpdateTurrets(void);
+void UpdateEnemyBullets(void);
+void UpdateEnemyBulletPosition(char i);
+char GetPreciseFireDirection(unsigned int turretX, unsigned int turretY, 
+    unsigned int playerX, unsigned int playerY);
+char ShootTurretBullet(char turretIndex, char direction);
 
 // Helper Functions
 int abs_delta(int delta);
@@ -1404,7 +1407,7 @@ void InitTurrets(void) {
         turrets[i].isDestroyed = 0;
         turrets[i].shootTimer = 0;
         // Default to random shooting
-        turrets[i].fireMode = 1;
+        turrets[i].fireMode = 2;
     }
 }
 
@@ -1477,37 +1480,37 @@ char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY,
     if (deltaY < 0) {  // Upper half
         if (deltaX < 0) {  // Upper-left quadrant
             if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
-                direction = 192;  // UP (largely vertical) [96*2]
+                direction = 192;  // UP
             } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
-                direction = 128;  // LEFT (largely horizontal) [64*2]
+                direction = 128;  // LEFT
             } else {
-                direction = 160;  // UP_LEFT (diagonal) [80*2]
+                direction = 160;  // UP_LEFT
             }
         } else {  // Upper-right quadrant
             if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
-                direction = 192;  // UP (largely vertical) [96*2]
+                direction = 192;  // UP
             } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
-                direction = 0;    // RIGHT (largely horizontal) [0*2]
+                direction = 0;    // RIGHT
             } else {
-                direction = 224;  // UP_RIGHT (diagonal) [112*2]
+                direction = 224;  // UP_RIGHT
             }
         }
     } else {  // Lower half
         if (deltaX < 0) {  // Lower-left quadrant
             if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
-                direction = 64;   // DOWN (largely vertical) [32*2]
+                direction = 64;   // DOWN 
             } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
-                direction = 128;  // LEFT (largely horizontal) [64*2]
+                direction = 128;  // LEFT 
             } else {
-                direction = 96;   // DOWN_LEFT (diagonal) [48*2]
+                direction = 96;   // DOWN_LEFT
             }
         } else {  // Lower-right quadrant
             if (absDeltaX == 0 || (verticalDominant && absDeltaX < (absDeltaY >> 1))) {
-                direction = 64;   // DOWN (largely vertical) [32*2]
+                direction = 64;   // DOWN
             } else if (absDeltaY == 0 || (!verticalDominant && absDeltaY < (absDeltaX >> 1))) {
-                direction = 0;    // RIGHT (largely horizontal) [0*2]
+                direction = 0;    // RIGHT
             } else {
-                direction = 32;   // DOWN_RIGHT (diagonal) [16*2]
+                direction = 32;   // DOWN_RIGHT
             }
         }
     }
@@ -1660,7 +1663,7 @@ void UpdateTurrets(void)
                         direction = RandomDirection();
                         break;
                         
-                    case 1: // Player-targeted mode
+                    case 1: // Player-targeted mode, direction but imprecise
                         {
                             // Get the closest player
                             char playerIndex = GetClosestPlayer(turrets[i].positionX, turrets[i].positionY);
@@ -1674,6 +1677,12 @@ void UpdateTurrets(void)
                             );
                         }
                         break;
+
+                    case 2: // Player-targeted mode, exactly where player is standing
+                    {
+                        direction = RandomDirection(); // currently not implemented
+                    }
+                    break;
                         
                     default: // Fallback to random
                         direction = RandomDirection();
