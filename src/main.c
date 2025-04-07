@@ -1189,11 +1189,6 @@ void ShootBullet(char i)
     }
 }
 
-void MoveBulletUp(char i, char j)       { players[i].bullets[j].positionY -= players[i].bullets[j].speed; players[i].bullets[j].spriteY -= players[i].bullets[j].speed; }
-void MoveBulletDown(char i, char j)     { players[i].bullets[j].positionY += players[i].bullets[j].speed; players[i].bullets[j].spriteY += players[i].bullets[j].speed; }
-void MoveBulletLeft(char i, char j)     { players[i].bullets[j].positionX -= players[i].bullets[j].speed; players[i].bullets[j].spriteX -= players[i].bullets[j].speed; }
-void MoveBulletRight(char i, char j)    { players[i].bullets[j].positionX += players[i].bullets[j].speed; players[i].bullets[j].spriteX += players[i].bullets[j].speed; }
-
 void UpdateBullets(char i)
 {
     for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
@@ -1463,76 +1458,6 @@ char GetClosestPlayer(unsigned int posX, unsigned int posY) {
     return (totalDist1 <= totalDist2) ? PLAYER_ONE : PLAYER_TWO;
 }
 
-// Lookup table for direction based on angle octants
-// Maps from 0-7 to DIRECTION_UP, DIRECTION_UP_RIGHT, etc.
-const unsigned char directionLookup[8] = {
-    DIRECTION_RIGHT,
-    DIRECTION_UP_RIGHT,
-    DIRECTION_UP,
-    DIRECTION_UP_LEFT,
-    DIRECTION_LEFT,
-    DIRECTION_DOWN_LEFT,
-    DIRECTION_DOWN,
-    DIRECTION_DOWN_RIGHT
-};
-
-// Determines which of 8 directions to fire in to aim at a target
-// Returns DIRECTION_* value
-// char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
-//                           unsigned int targetX, unsigned int targetY) {
-    
-//     // Calculate deltas (these can be negative)
-//     int deltaX = 0;
-//     int deltaY = 0;
-    
-//     // Handle potential overflow in subtraction
-//     if (targetX >= sourceX) {
-//         deltaX = targetX - sourceX;
-//     } else {
-//         deltaX = -(sourceX - targetX);
-//     }
-    
-//     if (targetY >= sourceY) {
-//         deltaY = targetY - sourceY;
-//     } else {
-//         deltaY = -(sourceY - targetY);
-//     }
-    
-//     // Determine the direction based on delta values
-//     char direction;
-    
-//     // Check if mostly vertical
-//     if (abs_delta(deltaY) > abs_delta(deltaX)) {
-//         // Vertical movement dominant
-//         if (deltaY < 0) {
-//             // Moving up
-//             if (deltaX < 0) direction = DIRECTION_UP_LEFT;
-//             else if (deltaX > 0) direction = DIRECTION_UP_RIGHT;
-//             else direction = DIRECTION_UP;
-//         } else {
-//             // Moving down
-//             if (deltaX < 0) direction = DIRECTION_DOWN_LEFT;
-//             else if (deltaX > 0) direction = DIRECTION_DOWN_RIGHT;
-//             else direction = DIRECTION_DOWN;
-//         }
-//     } else {
-//         // Horizontal movement dominant
-//         if (deltaX < 0) {
-//             // Moving left
-//             if (deltaY < 0) direction = DIRECTION_UP_LEFT;
-//             else if (deltaY > 0) direction = DIRECTION_DOWN_LEFT;
-//             else direction = DIRECTION_LEFT;
-//         } else {
-//             // Moving right
-//             if (deltaY < 0) direction = DIRECTION_UP_RIGHT;
-//             else if (deltaY > 0) direction = DIRECTION_DOWN_RIGHT;
-//             else direction = DIRECTION_RIGHT;
-//         }
-//     }
-    
-//     return direction;
-// }
-
 char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
     unsigned int targetX, unsigned int targetY) {
 
@@ -1781,61 +1706,6 @@ void UpdateTurrets(void)
     }
 }
 
-// char ShootTurretBullet(char turretIndex, char oldDirection) {
-//     // Find free bullet slot
-//     for (char i = 0; i < ENEMY_BULLET_COUNT; i++) {
-//         if (!enemyBullets[i].isVisible) {
-//             // Convert from old 8-direction to new 128-direction system
-//             unsigned char newDirection = ConvertOldDirectionToNew(oldDirection);
-            
-//             // Initialize position
-//             enemyBullets[i].isVisible = 1;
-//             enemyBullets[i].positionX = turrets[turretIndex].positionX + 8;
-//             enemyBullets[i].positionY = turrets[turretIndex].positionY + 8;
-//             enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
-//             enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
-            
-//             // Reset subpixel components
-//             enemyBullets[i].subpixelX = 0;
-//             enemyBullets[i].subpixelY = 0;
-            
-//             // Get vector components directly from the lookup tables
-//             DirectionVector vector;
-//             GetDirectionVector(newDirection, &vector);
-            
-//             // Adjust speed based on direction (diagonal or cardinal)
-//             if (directionFlags[newDirection] & DIRECTION_FLAG_DIAGONAL) {
-//                 // For diagonals, scale down by about 0.7 (approximately 181/256)
-//                 // We apply the scaling by working with the vector components
-//                 enemyBullets[i].velocityX = (vector.x * 181) >> 8;
-//                 enemyBullets[i].velocityY = (vector.y * 181) >> 8;
-                
-//                 // Store fractional parts
-//                 enemyBullets[i].velocityX_frac = (vector.x * 181) & 0xFF;
-//                 enemyBullets[i].velocityY_frac = (vector.y * 181) & 0xFF;
-//             } else {
-//                 // For cardinal directions, use full speed
-//                 enemyBullets[i].velocityX = vector.x >> 8;
-//                 enemyBullets[i].velocityY = vector.y >> 8;
-//                 enemyBullets[i].velocityX_frac = vector.x & 0xFF;
-//                 enemyBullets[i].velocityY_frac = vector.y & 0xFF;
-//             }
-            
-//             // Store the original direction value for compatibility
-//             enemyBullets[i].direction = oldDirection;
-            
-//             // Play sound effect if bullet is on screen
-//             if (enemyBullets[i].spriteX >= 8 && enemyBullets[i].spriteX <= SCREEN_WIDTH - 8 &&
-//                 enemyBullets[i].spriteY >= 8 && enemyBullets[i].spriteY <= SCREEN_HEIGHT - 8) {
-//                 LoadAndPlaySFX(SFX_ENEMY_SHOOT);
-//             }
-            
-//             return i;
-//         }
-//     }
-//     return -1;
-// }
-
 char ShootTurretBullet(char turretIndex, char direction) {
     // Find free bullet slot
     for (char i = 0; i < ENEMY_BULLET_COUNT; i++) {
@@ -1900,30 +1770,6 @@ char ShootTurretBullet(char turretIndex, char direction) {
     }
     return -1;
 }
-
-// Helper function to get a random direction (1-8), should not return same direction twice in a row
-// char RandomDirection(void) {
-//     // Get a random byte
-//     unsigned char randomValue = nextRandomByte();
-    
-//     // Use the low 3 bits (0-7) to index our direction map
-//     unsigned char dirIndex = randomValue & 0x07;
-    
-//     // Get a new direction from the lookup table
-//     char newDirection = directionMap[dirIndex];
-    
-//     // Avoid repeating the last direction
-//     if (newDirection == lastRandomDirection) {
-//         // Simple increment with wrap around, using just bitwise ops
-//         dirIndex = (dirIndex + 1) & 0x07;
-//         newDirection = directionMap[dirIndex];
-//     }
-    
-//     // Store this direction for next time
-//     lastRandomDirection = newDirection;
-    
-//     return newDirection;
-// }
 
 // Helper function to get a random direction from the 8 cardinal/ordinal directions and directly interface with the lookup tables
 char RandomDirection(void) {

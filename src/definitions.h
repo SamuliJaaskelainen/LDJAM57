@@ -12,17 +12,17 @@
 #define DIRECTION_DOWN_LEFT  	7
 #define DIRECTION_DOWN_RIGHT  	8
 
-
-// direction map struct because I don't feel like writing every direction
-const unsigned char directionMap[8] = {
-    DIRECTION_UP,
-    DIRECTION_UP_RIGHT,
+// Lookup table for direction based on angle octants
+// Maps from 0-7 to DIRECTION_UP, DIRECTION_UP_RIGHT, etc.
+const unsigned char directionLookup[8] = {
     DIRECTION_RIGHT,
-    DIRECTION_DOWN_RIGHT,
-    DIRECTION_DOWN,
-    DIRECTION_DOWN_LEFT,
+    DIRECTION_UP_RIGHT,
+    DIRECTION_UP,
+    DIRECTION_UP_LEFT,
     DIRECTION_LEFT,
-    DIRECTION_UP_LEFT
+    DIRECTION_DOWN_LEFT,
+    DIRECTION_DOWN,
+    DIRECTION_DOWN_RIGHT
 };
 
 
