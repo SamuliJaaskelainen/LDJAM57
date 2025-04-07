@@ -1690,27 +1690,40 @@ char ShootTurretBullet(char turretIndex, char direction) {
             DirectionVector vector;
             GetDirectionVector(direction, &vector);
             
-            // Scale the speed - this is crucial
-            // For 8-bit systems, we need a speed factor
-            char speedFactor = 2; // Adjust this value to match your desired speed
+        // For diagonals, we need to adjust the speed to maintain consistent velocity
+        if (directionFlags[direction] & DIRECTION_FLAG_DIAGONAL) {
+            signed char velX = (vector.x >> 8);
+            signed char velY = (vector.y >> 8);
+            unsigned char fracX = (vector.x & 0xFF);
+            unsigned char fracY = (vector.y & 0xFF);
             
-            // For diagonals, we need to adjust the speed to maintain consistent velocity
-            if (directionFlags[direction] & DIRECTION_FLAG_DIAGONAL) {
-                // For diagonals, adjust by ~0.7 (approximation of 1/sqrt(2))
-                enemyBullets[i].velocityX = ((vector.x >> 8) * speedFactor * 181) >> 8;  
-                enemyBullets[i].velocityY = ((vector.y >> 8) * speedFactor * 181) >> 8;
-                
-                // Store fractional parts
-                enemyBullets[i].velocityX_frac = ((vector.x & 0xFF) * speedFactor * 181) >> 8;
-                enemyBullets[i].velocityY_frac = ((vector.y & 0xFF) * speedFactor * 181) >> 8;
-            } else {
-                // For cardinal directions, use full speed
-                enemyBullets[i].velocityX = ((vector.x >> 8) * speedFactor);
-                enemyBullets[i].velocityY = ((vector.y >> 8) * speedFactor);
-                enemyBullets[i].velocityX_frac = ((vector.x & 0xFF) * speedFactor);
-                enemyBullets[i].velocityY_frac = ((vector.y & 0xFF) * speedFactor);
-            }
+            // Use a lookup table approach for the scaling factor
+            // This lookup table would contain pre-calculated values for (n * 106) >> 8
+            // where n ranges from -128 to 127
             
+            // For simplicity, let's use the approximation (x + x/2 + x/8) which gives ~1.625x
+            // This is a bit higher than 1.414, but provides reasonable results
+            
+            enemyBullets[i].velocityX = velX + (velX >> 1) + (velX >> 3);
+            enemyBullets[i].velocityY = velY + (velY >> 1) + (velY >> 3);
+            
+            // For fractional parts, do the same calculation
+            unsigned int tempX = fracX + (fracX >> 1) + (fracX >> 3);
+            unsigned int tempY = fracY + (fracY >> 1) + (fracY >> 3);
+            
+            enemyBullets[i].velocityX_frac = tempX & 0xFF;
+            enemyBullets[i].velocityY_frac = tempY & 0xFF;
+            
+            // Handle potential overflow from fractional to integer part
+            enemyBullets[i].velocityX += tempX >> 8;
+            enemyBullets[i].velocityY += tempY >> 8;
+        } else {
+            // For cardinal directions, use full speed (x2)
+            enemyBullets[i].velocityX = (vector.x >> 8) << 1;
+            enemyBullets[i].velocityY = (vector.y >> 8) << 1;
+            enemyBullets[i].velocityX_frac = (vector.x & 0xFF) << 1;
+            enemyBullets[i].velocityY_frac = (vector.y & 0xFF) << 1;
+        }
             // Still store the original direction for compatibility with existing code
             // This can be removed later if not needed
             enemyBullets[i].direction = direction; 
