@@ -61,6 +61,7 @@ void MoveEnemyBulletUp(char i);
 void MoveEnemyBulletDown(char i); 
 void MoveEnemyBulletLeft(char i);
 void MoveEnemyBulletRight(char i);
+void UpdateEnemyBulletPosition(char i);
 
 // Roar
 void Roar(char i);
@@ -1399,6 +1400,24 @@ void UpdateEnemyBullets(void)
     }
 }
 
+void UpdateEnemyBulletPosition(char i)
+{
+    // Add fractional parts first
+    unsigned int newSubpixelX = enemyBullets[i].subpixelX + enemyBullets[i].velocityX_frac;
+    unsigned int newSubpixelY = enemyBullets[i].subpixelY + enemyBullets[i].velocityY_frac;
+    
+    // Update integer positions with any carry from fractional addition
+    enemyBullets[i].positionX += enemyBullets[i].velocityX + (newSubpixelX >> 8);
+    enemyBullets[i].positionY += enemyBullets[i].velocityY + (newSubpixelY >> 8);
+    
+    // Store only the low byte of subpixel positions
+    enemyBullets[i].subpixelX = newSubpixelX & 0xFF;
+    enemyBullets[i].subpixelY = newSubpixelY & 0xFF;
+    
+    // Update sprite positions for rendering
+    enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
+    enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
+}
 /// Enemy AI Logic Start
 
 void InitTurrets(void) {

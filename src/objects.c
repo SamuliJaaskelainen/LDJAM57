@@ -2,6 +2,7 @@
 
 struct SpriteObject
 {
+    // Existing fields
     unsigned int positionX;
     unsigned int positionY;
     unsigned char spriteX;
@@ -16,6 +17,14 @@ struct SpriteObject
     unsigned char direction;
     unsigned char spriteOneIndex;
     unsigned char spriteTwoIndex;
+    
+    // New fields for subpixel movement (enemy bullets only)
+    unsigned char subpixelX;        // Fractional part of X position (0-255)
+    unsigned char subpixelY;        // Fractional part of Y position (0-255)
+    signed char velocityX;          // Integer part of X velocity 
+    unsigned char velocityX_frac;   // Fractional part of X velocity
+    signed char velocityY;          // Integer part of Y velocity
+    unsigned char velocityY_frac;   // Fractional part of Y velocity
 };
 
 struct PlayerObject
