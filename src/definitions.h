@@ -54,11 +54,6 @@ unsigned char ConvertOldDirectionToNew(unsigned char oldDir);
 void GetDirectionVector(unsigned char direction, DirectionVector* vector);
 unsigned char GetDirectionFromVector(signed int dx, signed int dy);
 
-// Pre-calculated sine/cosine values for 128 directions
-// Values are in 8.8 fixed-point format
-// Full circle is divided into 128 parts (0-127)
-// Direction 0 = RIGHT (0°), 32 = DOWN (90°), 64 = LEFT (180°), 96 = UP (270°)
-
 // High bytes (integer part) of X vector components (cosine)
 const signed char directionVectorXHigh[DIRECTION_GRANULAR_COUNT] = {
     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -85,26 +80,26 @@ const unsigned char directionVectorXLow[DIRECTION_GRANULAR_COUNT] = {
 
 // High bytes (integer part) of Y vector components (sine)
 const signed char directionVectorYHigh[DIRECTION_GRANULAR_COUNT] = {
-    0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 };
 
 // Low bytes (fractional part) of Y vector components (sine)
 const unsigned char directionVectorYLow[DIRECTION_GRANULAR_COUNT] = {
-    0, 244, 231, 219, 207, 194, 182, 170, 159, 147, 136, 125, 114, 104, 94, 85, 
-    75, 67, 59, 51, 44, 37, 31, 25, 20, 15, 12, 8, 5, 3, 2, 1, 
-    0, 1, 2, 3, 5, 8, 12, 15, 20, 25, 31, 37, 44, 51, 59, 67, 
-    75, 85, 94, 104, 114, 125, 136, 147, 159, 170, 182, 194, 207, 219, 231, 244, 
     0, 12, 25, 37, 49, 62, 74, 86, 97, 109, 120, 131, 142, 152, 162, 171, 
     181, 189, 197, 205, 212, 219, 225, 231, 236, 241, 244, 248, 251, 253, 254, 255, 
     0, 255, 254, 253, 251, 248, 244, 241, 236, 231, 225, 219, 212, 205, 197, 189, 
-    181, 171, 162, 152, 142, 131, 120, 109, 97, 86, 74, 62, 49, 37, 25, 12
+    181, 171, 162, 152, 142, 131, 120, 109, 97, 86, 74, 62, 49, 37, 25, 12, 
+    0, 244, 231, 219, 207, 194, 182, 170, 159, 147, 136, 125, 114, 104, 94, 85, 
+    75, 67, 59, 51, 44, 37, 31, 25, 20, 15, 12, 8, 5, 3, 2, 1, 
+    0, 1, 2, 3, 5, 8, 12, 15, 20, 25, 31, 37, 44, 51, 59, 67, 
+    75, 85, 94, 104, 114, 125, 136, 147, 159, 170, 182, 194, 207, 219, 231, 244
 };
 
 // Flags for each direction to quickly determine properties
@@ -122,15 +117,16 @@ const unsigned char directionFlags[DIRECTION_GRANULAR_COUNT] = {
 // Mapping table from 8-dir to 128-dir
 const unsigned char directionTo128[9] = {
     255,   // DIRECTION_NONE maps to 255 (special value)
-    96,    // DIRECTION_UP maps to 96 (270 degrees)
-    32,    // DIRECTION_DOWN maps to 32 (90 degrees)
+    32,    // DIRECTION_UP maps to 32 (90 degrees)
+    96,    // DIRECTION_DOWN maps to 96 (270 degrees)
     64,    // DIRECTION_LEFT maps to 64 (180 degrees)
     0,     // DIRECTION_RIGHT maps to 0 (0 degrees)
-    80,    // DIRECTION_UP_LEFT maps to 80 (225 degrees)
-    112,   // DIRECTION_UP_RIGHT maps to 112 (315 degrees)
-    48,    // DIRECTION_DOWN_LEFT maps to 48 (135 degrees)
-    16,    // DIRECTION_DOWN_RIGHT maps to 16 (45 degrees)
+    48,    // DIRECTION_UP_LEFT maps to 48 (135 degrees)
+    16,    // DIRECTION_UP_RIGHT maps to 16 (45 degrees)
+    80,    // DIRECTION_DOWN_LEFT maps to 80 (225 degrees)
+    112,   // DIRECTION_DOWN_RIGHT maps to 112 (315 degrees)
 };
+
 
 
 // Function to convert from old 8-direction system to new 128-direction system
