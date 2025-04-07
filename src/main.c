@@ -52,6 +52,9 @@ char GetRightDownMetatile(char i);
 void ShootBullet(char i);
 char ShootTurretBullet(char turretIndex, char direction);
 void UpdateBullets(char i);
+void MoveBullet(struct BulletObject* bullet);
+char bulletToSpriteCollision(struct BulletObject *bullet, struct SpriteObject *sprite);
+
 void MoveBulletUp(char i, char j);
 void MoveBulletDown(char i, char j);
 void MoveBulletLeft(char i, char j);
@@ -71,8 +74,18 @@ void ScanMapForTurrets(void);
 char GetClosestPlayer(unsigned int posX, unsigned int posY);
 char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY, 
                           unsigned int targetX, unsigned int targetY);
+char GetEnemyFireDirectionToPlayer(unsigned int sourceX, unsigned int sourceY);
 void CheckTurretsInBoundingBox(void);
 void UpdateTurrets(void);
+
+char boxCollisionToPoint(unsigned char aPosX, unsigned char aPosY, unsigned char aSize, 
+                         unsigned char bPosX, unsigned char bPosY);
+                         
+char boxCollisionToPointInt(unsigned int aPosX, unsigned int aPosY, unsigned int aSize, 
+                           unsigned int bPosX, unsigned int bPosY);
+
+char bulletToSpriteCollision(struct BulletObject *bullet, struct SpriteObject *sprite);
+                           
 
 // Helper Functions
 int abs_delta(int delta);
@@ -131,7 +144,7 @@ unsigned char playerStreamTurn = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
-struct SpriteObject enemyBullets[ENEMY_BULLET_COUNT];
+struct BulletObject enemyBullets[ENEMY_BULLET_COUNT];
 
 // Header
 SMS_EMBED_SEGA_ROM_HEADER(999, 0);
@@ -360,34 +373,35 @@ void LoadGameScreen(void)
         players[i].inputVertical = DIRECTION_NONE;
         players[i].inputHorizontal = DIRECTION_NONE;
 
+            // Initialize player bullets with fixed-point positions 
         for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
         {
-            players[i].bullets[j].positionX = 0;
-            players[i].bullets[j].positionY = 0;
-            players[i].bullets[j].spriteX = 0;
-            players[i].bullets[j].spriteY = 0;
-            players[i].bullets[j].isVisible = 0;
-            players[i].bullets[j].size = 16;
-            players[i].bullets[j].speed = 4;
-            players[i].bullets[j].direction = DIRECTION_DOWN;
-            players[i].bullets[j].spriteOneIndex = 8;
-            players[i].bullets[j].spriteTwoIndex = 10;
+        players[i].bullets[j].positionX = 0;
+        players[i].bullets[j].positionY = 0;
+        players[i].bullets[j].spriteX = 0;
+        players[i].bullets[j].spriteY = 0;
+        players[i].bullets[j].isVisible = 0;
+        players[i].bullets[j].size = 16;
+        players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DEFAULT;
+        players[i].bullets[j].direction = DIRECTION_DOWN;
+        players[i].bullets[j].spriteOneIndex = 8;
+        players[i].bullets[j].spriteTwoIndex = 10;
         }
     }
 
     // Init enemy bullets
     for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
     {
-        enemyBullets[i].positionX = 0;
-        enemyBullets[i].positionY = 0;
-        enemyBullets[i].spriteX = 0;
-        enemyBullets[i].spriteY = 0;
-        enemyBullets[i].isVisible = 0;
-        enemyBullets[i].size = 8;
-        enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
-        enemyBullets[i].direction = DIRECTION_DOWN;
-        enemyBullets[i].spriteOneIndex = 12;
-        enemyBullets[i].spriteTwoIndex = 0;
+    enemyBullets[i].positionX = 0;
+    enemyBullets[i].positionY = 0;
+    enemyBullets[i].spriteX = 0;
+    enemyBullets[i].spriteY = 0;
+    enemyBullets[i].isVisible = 0;
+    enemyBullets[i].size = 8;
+    enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+    enemyBullets[i].direction = DIRECTION_DOWN;
+    enemyBullets[i].spriteOneIndex = 12;
+    enemyBullets[i].spriteTwoIndex = 0;  // Not used for enemy bullets
     }
 
     // Reset game progress variables
@@ -526,8 +540,10 @@ void RenderSprites(void)
         {
             if(players[i].bullets[j].isVisible)
             {
-                SMS_addSprite(players[i].bullets[j].spriteX - 8, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteOneIndex);
-                SMS_addSprite(players[i].bullets[j].spriteX, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteTwoIndex);
+                SMS_addSprite(players[i].bullets[j].spriteX - 8, players[i].bullets[j].spriteY - 8, 
+                             players[i].bullets[j].spriteOneIndex);
+                SMS_addSprite(players[i].bullets[j].spriteX, players[i].bullets[j].spriteY - 8, 
+                             players[i].bullets[j].spriteTwoIndex);
             }
         }
     }
@@ -537,11 +553,12 @@ void RenderSprites(void)
     {
         if(enemyBullets[j].isVisible)
         {
-            SMS_addSprite(enemyBullets[j].spriteX - 4, enemyBullets[j].spriteY - 4, enemyBullets[j].spriteOneIndex);
+            SMS_addSprite(enemyBullets[j].spriteX - 4, enemyBullets[j].spriteY - 4, 
+                         enemyBullets[j].spriteOneIndex);
         }
     }
 
-    // Render UI, shared between players
+    // Render UI, shared between players (no changes needed)
     SMS_addSprite(UI_X, UI_Y, 270);
     SMS_addSprite(UI_X + 8, UI_Y, 272);
 
@@ -1140,6 +1157,38 @@ void Roar(char i)
     }
 }
 
+// void ShootBullet(char i)
+// {
+//     // Loop through bullets and see if any are available
+//     for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
+//     {
+//         if(!players[i].bullets[j].isVisible)
+//         {
+//             players[i].bullets[j].isVisible = 1;
+//             players[i].bullets[j].positionX = playersSprites[i].positionX;
+//             players[i].bullets[j].positionY = playersSprites[i].positionY;
+//             players[i].bullets[j].spriteX = playersSprites[i].spriteX;
+//             players[i].bullets[j].spriteY = playersSprites[i].spriteY;
+//             players[i].bullets[j].direction = playersSprites[i].direction;
+//             switch (players[i].bullets[j].direction)
+//             {
+//                 case DIRECTION_UP_LEFT:
+//                 case DIRECTION_DOWN_LEFT:
+//                 case DIRECTION_UP_RIGHT:
+//                 case DIRECTION_DOWN_RIGHT:
+//                     players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DIAGONAL;
+//                 break;
+
+//                 default:
+//                     players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DEFAULT;
+//                 break;
+//             }
+//             LoadAndPlaySFX(SFX_PLAYER_SHOOT);
+//             return;
+//         }
+//     }
+// }
+
 void ShootBullet(char i)
 {
     // Loop through bullets and see if any are available
@@ -1148,34 +1197,172 @@ void ShootBullet(char i)
         if(!players[i].bullets[j].isVisible)
         {
             players[i].bullets[j].isVisible = 1;
-            players[i].bullets[j].positionX = playersSprites[i].positionX;
-            players[i].bullets[j].positionY = playersSprites[i].positionY;
+            
+            // Convert to fixed point
+            players[i].bullets[j].positionX = playersSprites[i].positionX << 8;
+            players[i].bullets[j].positionY = playersSprites[i].positionY << 8;
+            
+            // World position in fixed point
+            players[i].bullets[j].positionX = playersSprites[i].positionX << 8;
+            players[i].bullets[j].positionY = playersSprites[i].positionY << 8;
+            
+            // Screen position needs to be calculated from world position
             players[i].bullets[j].spriteX = playersSprites[i].spriteX;
             players[i].bullets[j].spriteY = playersSprites[i].spriteY;
-            players[i].bullets[j].direction = playersSprites[i].direction;
-            switch (players[i].bullets[j].direction)
-            {
-                case DIRECTION_UP_LEFT:
-                case DIRECTION_DOWN_LEFT:
-                case DIRECTION_UP_RIGHT:
-                case DIRECTION_DOWN_RIGHT:
-                    players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DIAGONAL;
-                break;
 
-                default:
-                    players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DEFAULT;
-                break;
+            // Set direction (using legacy direction system initially)
+            players[i].bullets[j].direction = playersSprites[i].direction;
+            
+            // Set speed based on direction type
+            unsigned char newDir = ConvertOldDirectionToNew(players[i].bullets[j].direction);
+            if (directionFlags[newDir] & DIRECTION_FLAG_DIAGONAL) {
+                players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DIAGONAL;
+            } else {
+                players[i].bullets[j].speed = PLAYER_BULLET_SPEED_DEFAULT;
             }
+            
             LoadAndPlaySFX(SFX_PLAYER_SHOOT);
             return;
         }
     }
 }
 
+
 void MoveBulletUp(char i, char j)       { players[i].bullets[j].positionY -= players[i].bullets[j].speed; players[i].bullets[j].spriteY -= players[i].bullets[j].speed; }
 void MoveBulletDown(char i, char j)     { players[i].bullets[j].positionY += players[i].bullets[j].speed; players[i].bullets[j].spriteY += players[i].bullets[j].speed; }
 void MoveBulletLeft(char i, char j)     { players[i].bullets[j].positionX -= players[i].bullets[j].speed; players[i].bullets[j].spriteX -= players[i].bullets[j].speed; }
 void MoveBulletRight(char i, char j)    { players[i].bullets[j].positionX += players[i].bullets[j].speed; players[i].bullets[j].spriteX += players[i].bullets[j].speed; }
+
+void MoveBullet(struct BulletObject* bullet) 
+{
+    // Check if the bullet is visible
+    if (!bullet->isVisible) return;
+    
+    // If using legacy direction system, convert
+    unsigned char direction = bullet->direction;
+    if (direction < 9) {
+        direction = ConvertOldDirectionToNew(direction);
+    }
+    
+    // Get direction vector
+    DirectionVector vector;
+    GetDirectionVector(direction, &vector);
+    
+    // Apply speed - fixed approach for better movement
+    // For 8-bit systems, we still want to avoid expensive division
+    signed int deltaX = (vector.x * bullet->speed) >> 2;  // Divide by 8 (good balance)
+    signed int deltaY = (vector.y * bullet->speed) >> 2;
+    
+    // For cardinal directions, ensure minimum movement
+    if (deltaX == 0 && vector.x != 0) {
+        deltaX = (vector.x > 0) ? 1 : -1;
+    }
+    if (deltaY == 0 && vector.y != 0) {
+        deltaY = (vector.y > 0) ? 1 : -1;
+    }
+    
+    // Update position (fixed point)
+    bullet->positionX += deltaX;
+    bullet->positionY += deltaY;
+    
+    // Update sprite position (pixel position for rendering)
+    bullet->spriteX = (bullet->positionX >> 8) - scrollXTotal;
+    bullet->spriteY = (bullet->positionY >> 8) - scrollYTotal;
+}
+
+// void UpdateBullets(char i)
+// {
+//     for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
+//     {
+//         if(players[i].bullets[j].isVisible)
+//         {
+//             // Move bullets based on and direction
+//             switch (players[i].bullets[j].direction)
+//             {
+//                 case DIRECTION_UP:
+//                     MoveBulletUp(i, j);
+//                 break;
+
+//                 case DIRECTION_DOWN:
+//                     MoveBulletDown(i, j);
+//                 break;
+
+//                 case DIRECTION_LEFT:
+//                     MoveBulletLeft(i, j);
+//                 break;
+
+//                 case DIRECTION_RIGHT:
+//                     MoveBulletRight(i, j);
+//                 break;
+
+//                 case DIRECTION_UP_LEFT:
+//                     MoveBulletUp(i, j);
+//                     MoveBulletLeft(i, j);
+//                 break;
+
+//                 case DIRECTION_UP_RIGHT:
+//                     MoveBulletUp(i, j);
+//                     MoveBulletRight(i, j);
+//                 break;
+
+//                 case DIRECTION_DOWN_LEFT:
+//                     MoveBulletDown(i, j);
+//                     MoveBulletLeft(i, j);
+//                 break;
+
+//                 case DIRECTION_DOWN_RIGHT:
+//                     MoveBulletDown(i, j);
+//                     MoveBulletRight(i, j);
+//                 break;
+//             }
+
+//             // Apply scrolling
+//             players[i].bullets[j].positionX -= scrollXThisFrame;
+//             players[i].bullets[j].spriteX -= scrollXThisFrame;
+//             players[i].bullets[j].positionY -= scrollYThisFrame;
+//             players[i].bullets[j].spriteY -= scrollYThisFrame;
+
+//             // Destory bullets off screen
+//             if(players[i].bullets[j].spriteY < 8
+//             || players[i].bullets[j].spriteX < 8
+//             || players[i].bullets[j].spriteY > SCREEN_HEIGHT - 8
+//             || players[i].bullets[j].spriteX > SCREEN_WIDTH - 8)
+//             {
+//                 players[i].bullets[j].isVisible = 0;
+//             }
+
+//             // Player bullet collision to metatiles
+//             unsigned char *metatile = GSL_metatileLookup(players[i].bullets[j].positionX, players[i].bullets[j].positionY);
+//             if(*metatile == METATILE_FACTORY || *metatile == METATILE_FACTORY_CLAIMED)
+//             {
+//                 MetatileFactoryHit(metatile);
+//                 players[i].bullets[j].isVisible = 0;
+//             }
+//             else if(*metatile == METATILE_TURRET)
+//             {
+//                 for(char k = 0; k < MAX_ACTIVE_TURRETS; ++k)
+//                 {
+//                     if(boxCollisionToPointInt(players[i].bullets[j].positionX - 16, players[i].bullets[j].positionY - 16, 32, turrets[k].positionX, turrets[k].positionY))
+//                     {
+//                         MetatileSwapShootable(metatile);
+//                         turrets[k].isDestroyed = 1;
+//                         LoadAndPlaySFX(SFX_EXPLOSION);
+//                     }
+//                 }
+
+//                 players[i].bullets[j].isVisible = 0;
+//             }
+//             else if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
+//             {
+//                 // Hit wall!
+//                 players[i].bullets[j].isVisible = 0;
+//             }
+
+//             // Player bullet collision to enemy sprites
+//             // TODO
+//         }
+//     }
+// }
 
 void UpdateBullets(char i)
 {
@@ -1183,52 +1370,14 @@ void UpdateBullets(char i)
     {
         if(players[i].bullets[j].isVisible)
         {
-            // Move bullets based on and direction
-            switch (players[i].bullets[j].direction)
-            {
-                case DIRECTION_UP:
-                    MoveBulletUp(i, j);
-                break;
+            // Move the bullet using the new movement system
+            MoveBullet(&players[i].bullets[j]);
 
-                case DIRECTION_DOWN:
-                    MoveBulletDown(i, j);
-                break;
-
-                case DIRECTION_LEFT:
-                    MoveBulletLeft(i, j);
-                break;
-
-                case DIRECTION_RIGHT:
-                    MoveBulletRight(i, j);
-                break;
-
-                case DIRECTION_UP_LEFT:
-                    MoveBulletUp(i, j);
-                    MoveBulletLeft(i, j);
-                break;
-
-                case DIRECTION_UP_RIGHT:
-                    MoveBulletUp(i, j);
-                    MoveBulletRight(i, j);
-                break;
-
-                case DIRECTION_DOWN_LEFT:
-                    MoveBulletDown(i, j);
-                    MoveBulletLeft(i, j);
-                break;
-
-                case DIRECTION_DOWN_RIGHT:
-                    MoveBulletDown(i, j);
-                    MoveBulletRight(i, j);
-                break;
-            }
-
-            // Apply scrolling
-            players[i].bullets[j].positionX -= scrollXThisFrame;
-            players[i].bullets[j].spriteX -= scrollXThisFrame;
-            players[i].bullets[j].positionY -= scrollYThisFrame;
-            players[i].bullets[j].spriteY -= scrollYThisFrame;
-
+            if (i == PLAYER_ONE) {
+                players[i].bullets[j].spriteX -= scrollXThisFrame;
+                players[i].bullets[j].spriteY -= scrollYThisFrame;
+                }
+            
             // Destory bullets off screen
             if(players[i].bullets[j].spriteY < 8
             || players[i].bullets[j].spriteX < 8
@@ -1238,8 +1387,12 @@ void UpdateBullets(char i)
                 players[i].bullets[j].isVisible = 0;
             }
 
+            // Get world coordinates for collision checks
+            unsigned int worldX = players[i].bullets[j].positionX >> 8;
+            unsigned int worldY = players[i].bullets[j].positionY >> 8;
+
             // Player bullet collision to metatiles
-            unsigned char *metatile = GSL_metatileLookup(players[i].bullets[j].positionX, players[i].bullets[j].positionY);
+            unsigned char *metatile = GSL_metatileLookup(worldX, worldY);
             if(*metatile == METATILE_FACTORY || *metatile == METATILE_FACTORY_CLAIMED)
             {
                 MetatileFactoryHit(metatile);
@@ -1249,7 +1402,8 @@ void UpdateBullets(char i)
             {
                 for(char k = 0; k < MAX_ACTIVE_TURRETS; ++k)
                 {
-                    if(boxCollisionToPointInt(players[i].bullets[j].positionX - 16, players[i].bullets[j].positionY - 16, 32, turrets[k].positionX, turrets[k].positionY))
+                    if(boxCollisionToPointInt(worldX - 16, worldY - 16, 32, 
+                                            turrets[k].positionX, turrets[k].positionY))
                     {
                         MetatileSwapShootable(metatile);
                         turrets[k].isDestroyed = 1;
@@ -1259,17 +1413,15 @@ void UpdateBullets(char i)
 
                 players[i].bullets[j].isVisible = 0;
             }
-            else if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
+            else if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE)
             {
                 // Hit wall!
                 players[i].bullets[j].isVisible = 0;
             }
-
-            // Player bullet collision to enemy sprites
-            // TODO
         }
     }
 }
+
 
 void MetatileFactoryHit(unsigned char *metatile)
 {
@@ -1295,57 +1447,94 @@ void MoveEnemyBulletDown(char i)     { enemyBullets[i].positionY += enemyBullets
 void MoveEnemyBulletLeft(char i)     { enemyBullets[i].positionX -= enemyBullets[i].speed; enemyBullets[i].spriteX -= enemyBullets[i].speed; }
 void MoveEnemyBulletRight(char i)    { enemyBullets[i].positionX += enemyBullets[i].speed; enemyBullets[i].spriteX += enemyBullets[i].speed; }
 
+// void UpdateEnemyBullets(void)
+// {
+//     for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
+//     {
+//         if(enemyBullets[i].isVisible)
+//         {
+//             // Movement code for bullets
+//             switch (enemyBullets[i].direction)
+//             {
+//                 case DIRECTION_UP:
+//                     MoveEnemyBulletUp(i);
+//                 break;
+                
+//                 case DIRECTION_DOWN:
+//                     MoveEnemyBulletDown(i);
+//                 break;
+                
+//                 case DIRECTION_LEFT:
+//                     MoveEnemyBulletLeft(i);
+//                 break;
+                
+//                 case DIRECTION_RIGHT:
+//                     MoveEnemyBulletRight(i);
+//                 break;
+                
+//                 case DIRECTION_UP_LEFT:
+//                     MoveEnemyBulletUp(i);
+//                     MoveEnemyBulletLeft(i);
+//                 break;
+                
+//                 case DIRECTION_UP_RIGHT:
+//                     MoveEnemyBulletUp(i);
+//                     MoveEnemyBulletRight(i);
+//                 break;
+                
+//                 case DIRECTION_DOWN_LEFT:
+//                     MoveEnemyBulletDown(i);
+//                     MoveEnemyBulletLeft(i);
+//                 break;
+                
+//                 case DIRECTION_DOWN_RIGHT:
+//                     MoveEnemyBulletDown(i);
+//                     MoveEnemyBulletRight(i);
+//                 break;
+//             }
+            
+//             // Apply scrolling
+//             enemyBullets[i].positionX -= scrollXThisFrame;
+//             enemyBullets[i].spriteX -= scrollXThisFrame;
+//             enemyBullets[i].positionY -= scrollYThisFrame;
+//             enemyBullets[i].spriteY -= scrollYThisFrame;
+            
+//             // Check for off-screen
+//             if(enemyBullets[i].spriteY < 8
+//             || enemyBullets[i].spriteX < 8
+//             || enemyBullets[i].spriteY > SCREEN_HEIGHT - 8
+//             || enemyBullets[i].spriteX > SCREEN_WIDTH - 8)
+//             {
+//                 enemyBullets[i].isVisible = 0;
+//             }
+            
+//             // Check collisions with players
+//             for(char j = 0; j < PLAYER_COUNT; ++j)
+//             {
+//                 if(playersSprites[j].isVisible && players[j].action != ACTION_STUN)
+//                 {
+//                     if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
+//                     {
+//                         LoadAndPlaySFX(SFX_EXPLOSION);
+//                         players[j].action = ACTION_STUN;
+//                         players[j].actionCount = PLAYER_STUN_FRAME_COUNT;
+//                         players[j].actionFrame = 99;
+//                         enemyBullets[i].isVisible = 0;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
+
 void UpdateEnemyBullets(void)
 {
     for(char i = 0; i < ENEMY_BULLET_COUNT; ++i)
     {
         if(enemyBullets[i].isVisible)
         {
-            // Movement code for bullets
-            switch (enemyBullets[i].direction)
-            {
-                case DIRECTION_UP:
-                    MoveEnemyBulletUp(i);
-                break;
-                
-                case DIRECTION_DOWN:
-                    MoveEnemyBulletDown(i);
-                break;
-                
-                case DIRECTION_LEFT:
-                    MoveEnemyBulletLeft(i);
-                break;
-                
-                case DIRECTION_RIGHT:
-                    MoveEnemyBulletRight(i);
-                break;
-                
-                case DIRECTION_UP_LEFT:
-                    MoveEnemyBulletUp(i);
-                    MoveEnemyBulletLeft(i);
-                break;
-                
-                case DIRECTION_UP_RIGHT:
-                    MoveEnemyBulletUp(i);
-                    MoveEnemyBulletRight(i);
-                break;
-                
-                case DIRECTION_DOWN_LEFT:
-                    MoveEnemyBulletDown(i);
-                    MoveEnemyBulletLeft(i);
-                break;
-                
-                case DIRECTION_DOWN_RIGHT:
-                    MoveEnemyBulletDown(i);
-                    MoveEnemyBulletRight(i);
-                break;
-            }
-            
-            // Apply scrolling
-            enemyBullets[i].positionX -= scrollXThisFrame;
-            enemyBullets[i].spriteX -= scrollXThisFrame;
-            enemyBullets[i].positionY -= scrollYThisFrame;
-            enemyBullets[i].spriteY -= scrollYThisFrame;
+            // Move the bullet using the new movement system
+            MoveBullet(&enemyBullets[i]);
             
             // Check for off-screen
             if(enemyBullets[i].spriteY < 8
@@ -1361,7 +1550,8 @@ void UpdateEnemyBullets(void)
             {
                 if(playersSprites[j].isVisible && players[j].action != ACTION_STUN)
                 {
-                    if(spriteToSpriteCollision(&playersSprites[j], &enemyBullets[i]))
+                    // Since we've changed the structure, adjust the collision check
+                    if(bulletToSpriteCollision(&enemyBullets[i], &playersSprites[j]))
                     {
                         LoadAndPlaySFX(SFX_EXPLOSION);
                         players[j].action = ACTION_STUN;
@@ -1375,16 +1565,43 @@ void UpdateEnemyBullets(void)
     }
 }
 
+char bulletToSpriteCollision(struct BulletObject *bullet, struct SpriteObject *sprite)
+{
+   unsigned int bulletX = bullet->positionX >> 8;
+   unsigned int bulletY = bullet->positionY >> 8;
+   unsigned int leftA = bulletX;
+   unsigned int rightA = bulletX + bullet->size;
+   unsigned int topA = bulletY;
+   unsigned int bottomA = bulletY + bullet->size;
+
+   unsigned int leftB = sprite->positionX;
+   unsigned int rightB = sprite->positionX + sprite->size;
+   unsigned int topB = sprite->positionY;
+   unsigned int bottomB = sprite->positionY + sprite->size;
+
+   if (rightA < leftB || leftA > rightB || bottomA < topB || topA > bottomB) 
+      return 0;
+   else 
+      return 1;
+}
+
+
 /// Enemy AI Logic Start
 
+// Initialize turrets with different firing modes
 void InitTurrets(void) {
-    // Initialize all turrets as active for debugging purposes
+    // Initialize all turrets
     for(char i = 0; i < MAX_ACTIVE_TURRETS; ++i) {
         turrets[i].isActive = 1;
         turrets[i].isDestroyed = 0;
         turrets[i].shootTimer = 0;
-        // Default to random shooting
-        turrets[i].fireMode = 0;
+        
+        // Assign different firing modes:
+        // 0: Random direction (original)
+        // 1: 8-direction player targeting (original)
+        // 2: 128-direction precise player targeting (new)
+        //turrets[i].fireMode = i % 3;  // Distribute fire modes evenly
+        turrets[i].fireMode = 2;
     }
 }
 
@@ -1488,6 +1705,34 @@ char GetEnemyFireDirection(unsigned int sourceX, unsigned int sourceY,
     }
     
     return direction;
+}
+
+char GetEnemyFireDirectionToPlayer(unsigned int sourceX, unsigned int sourceY) {
+    // Get closest player index
+    char playerIndex = GetClosestPlayer(sourceX, sourceY);
+    
+    // Calculate deltas to that player
+    signed int deltaX = 0;
+    signed int deltaY = 0;
+    
+    unsigned int targetX = playersSprites[playerIndex].positionX;
+    unsigned int targetY = playersSprites[playerIndex].positionY;
+    
+    // Handle potential overflow in subtraction
+    if (targetX >= sourceX) {
+        deltaX = targetX - sourceX;
+    } else {
+        deltaX = -(sourceX - targetX);
+    }
+    
+    if (targetY >= sourceY) {
+        deltaY = targetY - sourceY;
+    } else {
+        deltaY = -(sourceY - targetY);
+    }
+    
+    // Use the vector-to-direction function
+    return GetDirectionFromVector(deltaX, deltaY);
 }
 
 // gets absolute value
@@ -1626,20 +1871,20 @@ void UpdateTurrets(void)
                 turrets[i].shootTimer = 0;
                 
                 // Determine direction based on fire mode
-                char direction;
+                unsigned char direction;
                 
                 switch (turrets[i].fireMode)
                 {
-                    case 0: // Random firing mode
+                    case 0: // Random firing mode (legacy)
                         direction = RandomDirection();
                         break;
                         
-                    case 1: // Player-targeted mode
+                    case 1: // Player-targeted mode (legacy 8-direction)
                         {
                             // Get the closest player
                             char playerIndex = GetClosestPlayer(turrets[i].positionX, turrets[i].positionY);
                             
-                            // Calculate direction to that player
+                            // Calculate direction to that player (legacy 8-direction system)
                             direction = GetEnemyFireDirection(
                                 turrets[i].positionX, 
                                 turrets[i].positionY,
@@ -1647,6 +1892,13 @@ void UpdateTurrets(void)
                                 playersSprites[playerIndex].positionY
                             );
                         }
+                        break;
+                        
+                    case 2: // Enhanced player targeting (128-direction)
+                        direction = GetEnemyFireDirectionToPlayer(
+                            turrets[i].positionX + 8,  // Center of turret 
+                            turrets[i].positionY + 8
+                        );
                         break;
                         
                     default: // Fallback to random
@@ -1661,6 +1913,47 @@ void UpdateTurrets(void)
     }
 }
 
+// char ShootTurretBullet(char turretIndex, char direction)
+// {
+//     // Look for a free enemy bullet
+//     for (char i = 0; i < ENEMY_BULLET_COUNT; i++)
+//     {
+//         if (!enemyBullets[i].isVisible)
+//         {
+//             // Found a free bullet, initialize it
+//             enemyBullets[i].isVisible = 1;
+            
+//             // Store coordinates
+//             enemyBullets[i].positionX = turrets[turretIndex].positionX + 8;
+//             enemyBullets[i].positionY = turrets[turretIndex].positionY + 8;
+//             enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
+//             enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
+            
+//             // Set default speed based on direction (diagonal is slower)
+//             if (direction == DIRECTION_UP_LEFT || direction == DIRECTION_UP_RIGHT || 
+//                 direction == DIRECTION_DOWN_LEFT || direction == DIRECTION_DOWN_RIGHT) {
+//                 enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT / 2;
+//             } else {
+//                 enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
+//             }
+            
+//             // Set the direction from the parameter
+//             enemyBullets[i].direction = direction;
+            
+//             // Sound effect if on screen
+//             if (enemyBullets[i].spriteX >= 8 && enemyBullets[i].spriteX <= SCREEN_WIDTH - 8 &&
+//                 enemyBullets[i].spriteY >= 8 && enemyBullets[i].spriteY <= SCREEN_HEIGHT - 8)
+//             {
+//                 LoadAndPlaySFX(SFX_ENEMY_SHOOT);
+//             }
+            
+//             return i; // Return the index of the created bullet
+//         }
+//     }
+    
+//     return -1; // Return -1 if no bullet was created
+// }
+
 char ShootTurretBullet(char turretIndex, char direction)
 {
     // Look for a free enemy bullet
@@ -1671,22 +1964,26 @@ char ShootTurretBullet(char turretIndex, char direction)
             // Found a free bullet, initialize it
             enemyBullets[i].isVisible = 1;
             
-            // Store coordinates
-            enemyBullets[i].positionX = turrets[turretIndex].positionX + 8;
-            enemyBullets[i].positionY = turrets[turretIndex].positionY + 8;
-            enemyBullets[i].spriteX = enemyBullets[i].positionX - scrollXTotal;
-            enemyBullets[i].spriteY = enemyBullets[i].positionY - scrollYTotal;
+            // Store coordinates in fixed-point format
+            enemyBullets[i].positionX = (turrets[turretIndex].positionX + 8) << 8;
+            enemyBullets[i].positionY = (turrets[turretIndex].positionY + 8) << 8;
             
-            // Set default speed based on direction (diagonal is slower)
-            if (direction == DIRECTION_UP_LEFT || direction == DIRECTION_UP_RIGHT || 
-                direction == DIRECTION_DOWN_LEFT || direction == DIRECTION_DOWN_RIGHT) {
+            // Calculate screen coordinates
+            enemyBullets[i].spriteX = ((turrets[turretIndex].positionX + 8) - scrollXTotal);
+            enemyBullets[i].spriteY = ((turrets[turretIndex].positionY + 8) - scrollYTotal);
+            
+            // Set direction (could be legacy or new)
+            enemyBullets[i].direction = direction;
+            
+            // Set speed based on direction type
+            unsigned char newDir = (direction < 9) ? 
+                                    ConvertOldDirectionToNew(direction) : direction;
+                                    
+            if (directionFlags[newDir] & DIRECTION_FLAG_DIAGONAL) {
                 enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT / 2;
             } else {
                 enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
             }
-            
-            // Set the direction from the parameter
-            enemyBullets[i].direction = direction;
             
             // Sound effect if on screen
             if (enemyBullets[i].spriteX >= 8 && enemyBullets[i].spriteX <= SCREEN_WIDTH - 8 &&

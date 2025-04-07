@@ -18,6 +18,21 @@ struct SpriteObject
     unsigned char spriteTwoIndex;
 };
 
+struct BulletObject
+{
+    unsigned int positionX;      // Fixed point position (8.8 format)
+    unsigned int positionY;      // Fixed point position (8.8 format)
+    unsigned char spriteX;       // Sprite position on screen
+    unsigned char spriteY;       // Sprite position on screen
+    unsigned char isVisible;     // 1 if visible, 0 if not
+    unsigned char size;          // Collision size
+    unsigned char speed;         // Bullet speed (in fixed-point units)
+    unsigned char direction;     // Direction (0-127 or legacy 0-8)
+    unsigned char spriteOneIndex; // Sprite pattern index
+    unsigned char spriteTwoIndex; // Optional second sprite index
+};
+
+
 struct PlayerObject
 {
     unsigned int ramDataAddress;
@@ -27,7 +42,7 @@ struct PlayerObject
     unsigned char actionOnePressed; // Action one cannot be hold, this variable is for checking presses
     unsigned char inputVertical;
     unsigned char inputHorizontal;
-    struct SpriteObject bullets[PLAYER_BULLET_COUNT];
+    struct BulletObject bullets[PLAYER_BULLET_COUNT];
 };
 
 // Stores information for turret activation and shooting calculations
@@ -68,15 +83,14 @@ struct TilePair {
 };
 
 // Array of walkable tile pairs - add all tile pairs here
-const struct TilePair walkableTilePairs[MAX_TILE_PAIRS_WALKABLE] =
-{
-    {METATILE_GRASS, METATILE_FLOWERS}, 
-    {0, 0}
+const struct TilePair walkableTilePairs[MAX_TILE_PAIRS_WALKABLE] = {
+    {METATILE_GRASS, METATILE_FLOWERS},    // Example: Normal ground = 8, Flowered ground = 104
+    {56, 112},   // Example: Another tile type
+    // Add more tile pairs as needed
 };
 
-const struct TilePair shootableTilePairs[MAX_TILE_PAIRS_SHOOTABLE] =
-{
-    {METATILE_TURRET, METATILE_FACTORY_CLAIMED},  
+const struct TilePair shootableTilePairs[MAX_TILE_PAIRS_SHOOTABLE] = {
+    {METATILE_TURRET, METATILE_FACTORY_CLAIMED},
     {0, 0}
 };
 
@@ -113,18 +127,6 @@ char spriteToSpriteCollision(struct SpriteObject *a, struct SpriteObject *b)
 
 // Return 0 if no collision
 char boxCollisionToPoint(unsigned char aPosX, unsigned char aPosY, unsigned char aSize, unsigned char bPosX, unsigned char bPosY)
-{
-   unsigned char leftA = aPosX;
-   unsigned char rightA = aPosX + aSize;
-   unsigned char topA = aPosY;
-   unsigned char bottomA = aPosY + aSize;
-
-   if (rightA < bPosX || leftA > bPosX || bottomA < bPosY || topA > bPosY)  return 0;
-   else return 1;
-}
-
-// Return 0 if no collision
-char boxCollisionToPointInt(unsigned int aPosX, unsigned int aPosY, unsigned int aSize, unsigned int bPosX, unsigned int bPosY)
 {
    unsigned int leftA = aPosX;
    unsigned int rightA = aPosX + aSize;
