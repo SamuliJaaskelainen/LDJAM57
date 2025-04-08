@@ -972,12 +972,8 @@ void StunPlayer(char i)
 
 char MetatileSwapWalkable(unsigned char *metatile, unsigned char index)
 {
-    unsigned char checkAmount = index + 8;
-    if(checkAmount >= MAX_TILE_PAIRS_WALKABLE)
-    {
-        checkAmount = 8;
-        index = 0;
-    }
+    unsigned char checkAmount = index + 10;
+    if(checkAmount >= MAX_TILE_PAIRS_WALKABLE) checkAmount = MAX_TILE_PAIRS_WALKABLE;
 
     for(; index < checkAmount; ++index)
     {
@@ -987,6 +983,8 @@ char MetatileSwapWalkable(unsigned char *metatile, unsigned char index)
             GSL_metatileUpdate();
         }
     }
+
+    if(index == MAX_TILE_PAIRS_WALKABLE) index = 0;
 
     return index;
 }
