@@ -452,8 +452,8 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define PLAYER_SPRITE_START_Y   96
 #define PLAYER_ACTION_FRAME_COUNT       15
 #define PLAYER_ACTION_INTERACTION_FRAME 14
-#define PLAYER_ROAR_FRAME_COUNT         30
-#define PLAYER_ROAR_FRAME               25
+#define PLAYER_ROAR_FRAME_COUNT         20
+#define PLAYER_ROAR_FRAME               19
 #define PLAYER_STUN_FRAME_COUNT         20
 #define PLAYER_COLLISION_VALUE  	    1
 #define PLAYER_ANIMATION_HOLD_DURATION  4
@@ -485,7 +485,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define ENEMY_BULLET_COUNT          6
 #define ENEMY_BULLET_SPEED_DEFAULT  2
 #define MAX_ACTIVE_TURRETS          16
-#define TURRET_SHOOT_RATE           30
+#define TURRET_SHOOT_RATE           50
 #define TURRET_SCAN_INTERVAL        60  // Scan every 60 frames
 
 // Constants for the player's bounding box

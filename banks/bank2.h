@@ -1,30 +1,24 @@
-extern const unsigned char	ugtbatch_metatiles_bin[1744];
-#define				ugtbatch_metatiles_bin_size 1744
-#define				ugtbatch_metatiles_bin_bank 2
-extern const unsigned char	player_tiles_bin[6144];
-#define				player_tiles_bin_size 6144
-#define				player_tiles_bin_bank 2
-extern const unsigned char	kaijulove_psg[7240];
-#define				kaijulove_psg_size 7240
-#define				kaijulove_psg_bank 2
-extern const unsigned char	explosion0_psg[83];
-#define				explosion0_psg_size 83
-#define				explosion0_psg_bank 2
-extern const unsigned char	convert_psg[120];
-#define				convert_psg_size 120
-#define				convert_psg_bank 2
-extern const unsigned char	convertfactory_psg[179];
-#define				convertfactory_psg_size 179
-#define				convertfactory_psg_bank 2
-extern const unsigned char	enemyshoot0_psg[28];
-#define				enemyshoot0_psg_size 28
-#define				enemyshoot0_psg_bank 2
-extern const unsigned char	map0_psg[91];
-#define				map0_psg_size 91
-#define				map0_psg_bank 2
-extern const unsigned char	roar0_psg[266];
-#define				roar0_psg_size 266
-#define				roar0_psg_bank 2
-extern const unsigned char	shoot0_psg[31];
-#define				shoot0_psg_size 31
-#define				shoot0_psg_bank 2
+extern const unsigned char	start_tiles_bin[4128];
+#define				start_tiles_bin_size 4128
+#define				start_tiles_bin_bank 2
+extern const unsigned char	end_tiles_bin[4064];
+#define				end_tiles_bin_size 4064
+#define				end_tiles_bin_bank 2
+extern const unsigned char	start_map_bin[1536];
+#define				start_map_bin_size 1536
+#define				start_map_bin_bank 2
+extern const unsigned char	end_map_bin[1536];
+#define				end_map_bin_size 1536
+#define				end_map_bin_bank 2
+extern const unsigned char	startendpalette_pal_bin[16];
+#define				startendpalette_pal_bin_size 16
+#define				startendpalette_pal_bin_bank 2
+extern const unsigned char	black_palette_bin[17];
+#define				black_palette_bin_size 17
+#define				black_palette_bin_bank 2
+extern const unsigned char	font_tiles_bin[3040];
+#define				font_tiles_bin_size 3040
+#define				font_tiles_bin_bank 2
+extern const unsigned char	kaijulike_psg[1189];
+#define				kaijulike_psg_size 1189
+#define				kaijulike_psg_bank 2

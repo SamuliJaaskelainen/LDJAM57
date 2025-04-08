@@ -7,10 +7,17 @@ const unsigned int playerAnimMoveRight[] = { 128*4, 128*5, 128*6, 128*7 };
 const unsigned int playerAnimMoveLeft[] = { 128*12, 128*13, 128*14, 128*15 };
 const unsigned int playerAnimMoveUp[] = { 128*20, 128*21, 128*22, 128*23 };
 const unsigned int playerAnimMoveDown[] = { 128*28, 128*29, 128*30, 128*31 };
-const unsigned int playerAnimA[] = { 128*32, 128*33, 128*34, 128*35 };
-const unsigned int playerAnimB[] = { 128*36, 128*37, 128*38, 128*39 };
-const unsigned int playerAnimOne[] = { 128*40, 128*41, 128*42, 128*43 };
-const unsigned int playerAnimTwo[] = { 128*44, 128*45, 128*46, 128*47 };
+
+
+const unsigned int playerAnimStunRight[] = { 128*43, 128*44, 128*43, 128*44 };
+const unsigned int playerAnimStunLeft[] = { 128*34, 128*35, 128*34, 128*35 };
+const unsigned int playerAnimRoarRight[] = { 128*41, 128*42, 128*41, 128*42 };
+const unsigned int playerAnimRoarLeft[] = { 128*32, 128*33, 128*32, 128*33 };
+
+const unsigned int playerAnimShootUp[] = { 128*38, 128*38, 128*38, 128*38 };
+const unsigned int playerAnimShootDown[] = { 128*39, 128*39, 128*39, 128*39 };
+const unsigned int playerAnimShootLeft[] = { 128*37, 128*37, 128*37, 128*37 };
+const unsigned int playerAnimShootRight[] = { 128*36, 128*36, 128*36, 128*36 };
 
 // Metatile lut requires updating every time the map is exported
 // PLAYER_COLLISION_VALUE == SOLID

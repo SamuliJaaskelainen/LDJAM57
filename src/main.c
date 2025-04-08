@@ -5,6 +5,7 @@
 #include "..\banks\bank2.h"
 #include "..\banks\bank3.h"
 #include "..\banks\bank4.h"
+#include "..\banks\bank5.h"
 
 #include "definitions.h"
 #include "resources.c"
@@ -302,8 +303,20 @@ void LoadStoryScreen(void)
     SMS_mapROMBank(font_tiles_bin_bank);
     SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
     SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
-    SMS_printatXY(7, 3, "STORY");
-    SMS_printatXY(10, 8, "Press START");
+    SMS_printatXY(5, 3, "STORY");
+
+    SMS_printatXY(5, 5, "Man has upset nature");
+    SMS_printatXY(5, 6, "covering the land in");
+    SMS_printatXY(5, 7, "steel and asphalt.");
+    SMS_printatXY(5, 8, "This has thrown off");
+    SMS_printatXY(5, 9, "the natural vibe.");
+    SMS_printatXY(5, 10, "So from the depths rise");
+    SMS_printatXY(5, 11, "Nature's immune system");
+    SMS_printatXY(5, 12, "in the form of a warrior");
+    SMS_printatXY(5, 13, "to mend the vibe.");
+    SMS_printatXY(5, 14, "From the depths rise...");
+
+    SMS_printatXY(10, 17, "Press START");
     // Loading complete, start display
     SMS_displayOn();
 }
@@ -421,6 +434,10 @@ void LoadGameScreen(void)
             players[i].bullets[j].direction = DIRECTION_DOWN;
             players[i].bullets[j].spriteOneIndex = SPRITE_VRAM_OFFSET + 8;
             players[i].bullets[j].spriteTwoIndex = SPRITE_VRAM_OFFSET + 10;
+
+            // players[i].bullets[j].animationFrameCounter = 0;
+            // players[i].bullets[j].currentAnimationFrame = 0;
+            // players[i].bullets[j].animationFrameDataCount = 2;
         }
     }
 
@@ -514,12 +531,12 @@ void HandleStoryScreen(void)
         menuStartFlasher = 0;
         if(menuStartVisible)
         {
-            SMS_printatXY(10, 8, "           ");
+            SMS_printatXY(10, 17, "           ");
             menuStartVisible = 0;
         }
         else
         {
-            SMS_printatXY(10, 8, "Press START");
+            SMS_printatXY(10, 17, "Press START");
             menuStartVisible = 1;
         }
     }
@@ -634,8 +651,8 @@ void RenderSprites(void)
     }
 
     // Render UI, shared between players
-    SMS_addSprite(UI_X, UI_Y, FONT_VRAM_OFFSET + 14);
-    SMS_addSprite(UI_X + 8, UI_Y, FONT_VRAM_OFFSET + 14);
+    SMS_addSprite(UI_X, UI_Y, 398);
+    SMS_addSprite(UI_X + 8, UI_Y, 400);
 
     if(numFactories > 9)
     {
@@ -676,12 +693,15 @@ void RenderSpritesUnsafe(void)
     {
         if(playerStreamTurn == 4)
         {
+            SMS_mapROMBank(player_tiles_bin_bank);
             UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_ONE].animationFrameData[playersSprites[PLAYER_ONE].currentAnimationFrame]]);
         }
         else if(playerStreamTurn == 8)
         {
             playerStreamTurn = 0;
-            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_TWO].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_TWO].animationFrameData[playersSprites[PLAYER_TWO].currentAnimationFrame]]);
+            SMS_mapROMBank(player2_tiles_bin_bank);
+            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_TWO].ramDataAddress, &player2_tiles_bin[playersSprites[PLAYER_TWO].animationFrameData[playersSprites[PLAYER_TWO].currentAnimationFrame]]);
+            SMS_mapROMBank(player_tiles_bin_bank);
         }
         playerStreamTurn++;
     }
@@ -712,17 +732,17 @@ void UpdatePlayerAnimations(char i)
     {
         case DIRECTION_UP:
             if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveUp);
-            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
-            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
-            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimA);
+            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimRoarLeft);
+            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimShootUp);
+            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimStunLeft);
             else setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
         break;
 
         case DIRECTION_DOWN:
             if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveDown);
-            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
-            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
-            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimA);
+            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimRoarRight);
+            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimShootDown);
+            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimStunRight);
             else setSpriteAnimation(&playersSprites[i], playerAnimIdleDown);
         break;
 
@@ -730,9 +750,9 @@ void UpdatePlayerAnimations(char i)
         case DIRECTION_UP_LEFT:
         case DIRECTION_DOWN_LEFT:
             if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveLeft);
-            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
-            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
-            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimA);
+            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimRoarLeft);
+            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimShootLeft);
+            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimStunLeft);
             else setSpriteAnimation(&playersSprites[i], playerAnimIdleLeft);
         break;
 
@@ -740,9 +760,9 @@ void UpdatePlayerAnimations(char i)
         case DIRECTION_UP_RIGHT:
         case DIRECTION_DOWN_RIGHT:
             if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveRight);
-            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimOne);
-            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimTwo);
-            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimA);
+            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimRoarRight);
+            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimShootRight);
+            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimStunRight);
             else setSpriteAnimation(&playersSprites[i], playerAnimIdleRight);
         break;
     }
@@ -1303,6 +1323,16 @@ void UpdateBullets(char i)
     {
         if(players[i].bullets[j].isVisible)
         {
+            // players[i].bullets[j].animationFrameCounter++;
+            // if(players[i].bullets[j].animationFrameCounter > 20)
+            // {
+            //     players[i].bullets[j].currentAnimationFrame++;
+            //     if(players[i].bullets[j].currentAnimationFrame == players[i].bullets[j].animationFrameDataCount)
+            //     {
+            //         players[i].bullets[j].currentAnimationFrame = 0;
+            //     }
+            // }
+
             // Move bullets based on and direction
             switch (players[i].bullets[j].direction)
             {
