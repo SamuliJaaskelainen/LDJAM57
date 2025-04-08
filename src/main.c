@@ -268,16 +268,17 @@ void LoadTitleScreen(void)
     // Load the title screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
     SMS_loadBGPalette(&startendpalette_pal_bin);
-    //SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
-    //SMS_loadTileMap(0,0,&start_map_bin, start_map_bin_size);
+    SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
+    SMS_VRAMmemsetW(XYtoADDR(0,0), 142, 2048);
+    SMS_loadTileMap(0,5,&start_map_bin, start_map_bin_size);
     SMS_mapROMBank(font_tiles_bin_bank);
     SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
     SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
     SMS_printatXY(7, 3, "--==GOODZILLA==--");
-    SMS_printatXY(10, 8, "Press START");
-    SMS_printatXY(7, 16, "Player Two can join");
-    SMS_printatXY(7, 17, "by pressing START");
-    SMS_printatXY(7, 18, "during gameplay!");
+    SMS_printatXY(10, 15, "Press START");
+    SMS_printatXY(7, 19, "Player Two can join");
+    SMS_printatXY(7, 20, "by pressing START");
+    SMS_printatXY(7, 21, "during gameplay!");
     // Loading complete, start display
     SMS_displayOn();
 
@@ -301,8 +302,6 @@ void LoadStoryScreen(void)
     // Load the title screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
     SMS_loadBGPalette(&startendpalette_pal_bin);
-    //SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
-    //SMS_loadTileMap(0,0,&start_map_bin, start_map_bin_size);
     SMS_mapROMBank(font_tiles_bin_bank);
     SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
     SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
@@ -341,8 +340,6 @@ void LoadEndScreen(void)
     // Load the end screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
     SMS_loadBGPalette(&startendpalette_pal_bin);
-    //SMS_loadTiles(&end_tiles_bin, 0, end_tiles_bin_size);
-    //SMS_loadTileMap(0,0,&end_map_bin, end_map_bin_size);
     SMS_mapROMBank(font_tiles_bin_bank);
     SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
     SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
@@ -505,12 +502,12 @@ void HandleTitleScreen(void)
         menuStartFlasher = 0;
         if(menuStartVisible)
         {
-            SMS_printatXY(10, 8, "           ");
+            SMS_printatXY(10, 15, "           ");
             menuStartVisible = 0;
         }
         else
         {
-            SMS_printatXY(10, 8, "Press START");
+            SMS_printatXY(10, 15, "Press START");
             menuStartVisible = 1;
         }
     }
@@ -660,8 +657,8 @@ void RenderSprites(void)
     }
 
     // Render UI, shared between players
-    SMS_addSprite(UI_X, UI_Y, 398);
-    SMS_addSprite(UI_X + 8, UI_Y, 400);
+    SMS_addSprite(UI_X, UI_Y, 366);
+    SMS_addSprite(UI_X + 8, UI_Y, 368);
 
     if(numFactories > 9)
     {
