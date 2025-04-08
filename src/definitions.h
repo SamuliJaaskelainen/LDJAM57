@@ -279,6 +279,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define METATILE_TURRET             253
 #define METATILE_TURRET_DEAD        89
 #define METATILE_GRASS              150
+#define METATILE_GRASS_EXTRA_1     153
 #define METATILE_FLOWERS            205
 #define METATILE_MINE               52
 #define METATILE_MINE_CONVERTED     158
@@ -318,6 +319,11 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define METATILE_ROAD_10_C     248
 #define METATILE_ROAD_11     210
 #define METATILE_ROAD_11_C     237
+#define METATILE_ROAD_EXTRA_08     26
+#define METATILE_ROAD_EXTRA_05A     97
+#define METATILE_ROAD_EXTRA_05B     139
+#define METATILE_ROAD_EXTRA_04     204
+#define METATILE_ROAD_EXTRA_11     54
 
 #define METATILE_BARREL_01     62
 #define METATILE_BARREL_01_C     154
@@ -433,13 +439,14 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define METATILE_FOREST_15_C     64
 #define METATILE_FOREST_16     160
 #define METATILE_FOREST_16_C     145
+#define METATILE_FOREST_EXTRA_12     18
 
 // Map Data
 #define SECTOR_SIZE                 256 // Size in pixels for subdividing the map into sectors
 #define MAX_SECTORS                 16 // 1024x1024 map becomes 4x4 sectors
 #define MAX_FACTORY_NUM             18
-#define MAX_TILE_PAIRS_WALKABLE     31
-#define MAX_TILE_PAIRS_SHOOTABLE    40
+#define MAX_TILE_PAIRS_WALKABLE     37
+#define MAX_TILE_PAIRS_SHOOTABLE    43
 #define MAX_TURRETS_PER_SECTOR      8
 
 // Player Defines

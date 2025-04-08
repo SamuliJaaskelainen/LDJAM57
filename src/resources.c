@@ -60,7 +60,7 @@ const unsigned char metatilesMetaLUT[] =
 	0x01,	//34
 	0x00,	//35
 	0x01,	//36
-	0x00,	//37
+	0x01,	//37
 	0x00,	//38
 	0x00,	//39
 	0x00,	//40
@@ -218,7 +218,7 @@ const unsigned char metatilesMetaLUT[] =
 	0x01,	//192
 	0x00,	//193
 	0x01,	//194
-	0x00,	//195
+	0x01,	//195
 	0x00,	//196
 	0x00,	//197
 	0x00,	//198

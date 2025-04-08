@@ -1413,6 +1413,11 @@ void UpdateBullets(char i)
             }
             else 
             {
+                if(*metatile == METATILE_MINE)
+                {
+                    players[i].bullets[j].isVisible = 0;
+                }
+
                 MetatileSwapShootable(metatile);
 
                 if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
