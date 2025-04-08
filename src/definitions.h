@@ -463,7 +463,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define PLAYER_ROAR_FRAME               19
 #define PLAYER_STUN_FRAME_COUNT         20
 #define PLAYER_COLLISION_VALUE  	    1
-#define PLAYER_ANIMATION_HOLD_DURATION  4
+#define PLAYER_ANIMATION_HOLD_DURATION  8
 #define PLAYER_BULLET_COUNT             3
 #define PLAYER_SPEED_DEFAULT            2
 #define PLAYER_SPEED_DIAGONAL           1
@@ -475,7 +475,6 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 // Screen Space Defines
 #define SCREEN_WIDTH            256
 #define SCREEN_HEIGHT           192
-#define FONT_VRAM_OFFSET        320
 #define START_WOLRD_OFFSET_X    768
 #define START_WOLRD_OFFSET_Y    832
 #define SCREEN_EDGE_Y           96
@@ -489,7 +488,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define GAME_STATE_END          3
 
 // Enemy Defines
-#define ENEMY_BULLET_COUNT          6
+#define ENEMY_BULLET_COUNT          4
 #define ENEMY_BULLET_SPEED_DEFAULT  2
 #define MAX_ACTIVE_TURRETS          16
 #define TURRET_SHOOT_RATE           50
@@ -515,6 +514,6 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 
 // Data loading offsets
 #define FONT_VRAM_OFFSET 320
-#define SPRITE_VRAM_OFFSET 352 + 32
+#define SPRITE_VRAM_OFFSET 352
 
 #endif /* DEFINITIONS_H */

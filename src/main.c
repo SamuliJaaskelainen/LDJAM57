@@ -36,7 +36,7 @@ char IsPlayerDownLeftBlocked(char i);
 char IsPlayerDownRightBlocked(char i);
 
 // Metatiles
-void MetatileSwapWalkable(unsigned char *metatile);
+char MetatileSwapWalkable(unsigned char *metatile, unsigned char index);
 void MetatileSwapShootable(unsigned char *metatile);
 void MetatileFactoryHit(unsigned char * metatile);
 char GetTopLeftMetatile(char i);
@@ -138,6 +138,7 @@ unsigned char menuStartFlasher = 0;
 unsigned char menuStartVisible = 0;
 unsigned char playerStreamTurn = 0;
 unsigned char enemyBulletForCollisionUpdate = 0;
+unsigned char frameCounter = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
@@ -154,6 +155,8 @@ void main(void)
 
     while(1)
     {
+        frameCounter++;
+
         // Read gamepad
         keyStatus = SMS_getKeysStatus();
         
@@ -413,14 +416,24 @@ void LoadGameScreen(void)
         playersSprites[i].animationFrameDataCount = 4;
         setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
         playersSprites[i].direction = DIRECTION_DOWN;
-        players[i].ramDataAddress = i == 0 ? (SPRITE_VRAM_OFFSET << 5) : (SPRITE_VRAM_OFFSET << 5) + 130;
-        playersSprites[i].spriteOneIndex = SPRITE_VRAM_OFFSET + (i << 2);
-        playersSprites[i].spriteTwoIndex = SPRITE_VRAM_OFFSET + (2 + (i << 2)) ;
+        if(i == 0)
+        {
+            players[i].ramDataAddress = (SPRITE_VRAM_OFFSET << 5);
+            playersSprites[i].spriteOneIndex = SPRITE_VRAM_OFFSET;
+            playersSprites[i].spriteTwoIndex = SPRITE_VRAM_OFFSET + 2;
+        }
+        else
+        {
+            players[i].ramDataAddress = (SPRITE_VRAM_OFFSET << 5) + 2048;//130;
+            playersSprites[i].spriteOneIndex = SPRITE_VRAM_OFFSET + 64;
+            playersSprites[i].spriteTwoIndex = SPRITE_VRAM_OFFSET + 66;
+        }
         players[i].action = ACTION_STATIONARY;
         players[i].actionCount = 0;
         players[i].actionOnePressed = 0;
         players[i].inputVertical = DIRECTION_NONE;
         players[i].inputHorizontal = DIRECTION_NONE;
+        players[i].walkTileCheckIndex = 0;
 
         for(char j = 0; j < PLAYER_BULLET_COUNT; ++j)
         {
@@ -434,10 +447,6 @@ void LoadGameScreen(void)
             players[i].bullets[j].direction = DIRECTION_DOWN;
             players[i].bullets[j].spriteOneIndex = SPRITE_VRAM_OFFSET + 8;
             players[i].bullets[j].spriteTwoIndex = SPRITE_VRAM_OFFSET + 10;
-
-            // players[i].bullets[j].animationFrameCounter = 0;
-            // players[i].bullets[j].currentAnimationFrame = 0;
-            // players[i].bullets[j].animationFrameDataCount = 2;
         }
     }
 
@@ -938,14 +947,17 @@ void UpdatePlayer(char i)
         for(char j = 0; j < playersSprites[i].speed; ++j) MovePlayer(i);  //MovePlayerNoCollision(i); 
 
         // Check metatile stepped on
-        unsigned char *metatile = GSL_metatileLookup(playersSprites[i].positionX, playersSprites[i].positionY);
-        MetatileSwapWalkable(metatile);
-
-        if(*metatile == METATILE_MINE)
+        if((frameCounter & 1) == i)
         {
-            *metatile = METATILE_MINE_HOLE;
-            GSL_metatileUpdate();
-            StunPlayer(i);
+            unsigned char *metatile = GSL_metatileLookup(playersSprites[i].positionX, playersSprites[i].positionY);
+            players[i].walkTileCheckIndex = MetatileSwapWalkable(metatile, players[i].walkTileCheckIndex);
+
+            if(*metatile == METATILE_MINE)
+            {
+                *metatile = METATILE_MINE_HOLE;
+                GSL_metatileUpdate();
+                StunPlayer(i);
+            }
         }
     }
 }
@@ -958,16 +970,25 @@ void StunPlayer(char i)
     players[i].actionFrame = 99;
 }
 
-void MetatileSwapWalkable(unsigned char *metatile)
+char MetatileSwapWalkable(unsigned char *metatile, unsigned char index)
 {
-    for(char i = 0; i < MAX_TILE_PAIRS_WALKABLE; ++i)
+    unsigned char checkAmount = index + 8;
+    if(checkAmount >= MAX_TILE_PAIRS_WALKABLE)
     {
-        if (*metatile == walkableTilePairs[i].normalTile)
+        checkAmount = 8;
+        index = 0;
+    }
+
+    for(; index < checkAmount; ++index)
+    {
+        if (*metatile == walkableTilePairs[index].normalTile)
         {
-            *metatile = walkableTilePairs[i].flowerTile;
+            *metatile = walkableTilePairs[index].flowerTile;
             GSL_metatileUpdate();
         }
     }
+
+    return index;
 }
 
 void MetatileSwapShootable(unsigned char *metatile)
@@ -1411,21 +1432,18 @@ void UpdateBullets(char i)
                 players[i].bullets[j].isVisible = 0;
                 continue;
             }
-            else 
+            else if(*metatile == METATILE_MINE)
             {
-                if(*metatile == METATILE_MINE)
-                {
-                    players[i].bullets[j].isVisible = 0;
-                }
-
                 MetatileSwapShootable(metatile);
-
-                if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
-                {
-                    // Hit wall!
-                    players[i].bullets[j].isVisible = 0;
-                    continue;
-                }
+                players[i].bullets[j].isVisible = 0;
+                continue;
+            }
+            else if(metatilesMetaLUT[*metatile] & PLAYER_COLLISION_VALUE == 1)
+            {
+                // Hit wall!
+                MetatileSwapShootable(metatile);
+                players[i].bullets[j].isVisible = 0;
+                continue;
             }
         }
     }
