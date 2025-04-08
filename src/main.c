@@ -138,6 +138,10 @@ unsigned char menuStartFlasher = 0;
 unsigned char menuStartVisible = 0;
 unsigned char playerStreamTurn = 0;
 unsigned char enemyBulletForCollisionUpdate = 0;
+unsigned char enemyBulletAnimCounter = 0;
+unsigned char playerBulletAnimCounter = 0;
+unsigned char enemyBulletAnimFrame = 0;
+unsigned char playerBulletAnimFrame = 0;
 unsigned char frameCounter = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
@@ -378,11 +382,11 @@ void LoadGameScreen(void)
     SMS_mapROMBank(ugtbatch_tiles_bin_bank);
     SMS_loadTiles(&ugtbatch_tiles_bin, 0, ugtbatch_tiles_bin_size);
     SMS_mapROMBank(pollen_tiles_bin_bank);
-    SMS_loadTiles(&pollen_tiles_bin, SPRITE_VRAM_OFFSET + 8, pollen_tiles_bin_size);
+    SMS_loadTiles(&pollen_tiles_bin, SPRITE_VRAM_OFFSET + 4, pollen_tiles_bin_size);
     SMS_mapROMBank(bullet_tiles_bin_bank);
-    SMS_loadTiles(&bullet_tiles_bin, SPRITE_VRAM_OFFSET + 12, bullet_tiles_bin_size);
+    SMS_loadTiles(&bullet_tiles_bin, SPRITE_VRAM_OFFSET + 4 + 8, bullet_tiles_bin_size);
     SMS_mapROMBank(factory_tiles_bin_bank);
-    SMS_loadTiles(&factory_tiles_bin, SPRITE_VRAM_OFFSET + 14, factory_tiles_bin_size);
+    SMS_loadTiles(&factory_tiles_bin, 390, factory_tiles_bin_size);
     SMS_mapROMBank(spritenumbers_tiles_bin_bank);
     SMS_loadTiles(&spritenumbers_tiles_bin, SPRITE_VRAM_OFFSET + 18, spritenumbers_tiles_bin_size);
 
@@ -408,10 +412,6 @@ void LoadGameScreen(void)
         playersSprites[i].isVisible = i == 0;
         playersSprites[i].size = 16;
         playersSprites[i].speed = PLAYER_SPEED_DEFAULT;
-        playersSprites[i].animationFrameCounter = 0;
-        playersSprites[i].currentAnimationFrame = 0;
-        playersSprites[i].animationFrameDataCount = 4;
-        setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
         playersSprites[i].direction = DIRECTION_DOWN;
         if(i == 0)
         {
@@ -425,6 +425,10 @@ void LoadGameScreen(void)
             playersSprites[i].spriteOneIndex = SPRITE_VRAM_OFFSET + 64;
             playersSprites[i].spriteTwoIndex = SPRITE_VRAM_OFFSET + 66;
         }
+        players[i].animationFrameCounter = 0;
+        players[i].currentAnimationFrame = 0;
+        players[i].animationFrameDataCount = 4;
+        setPlayerAnimation(&players[i], playerAnimIdleUp);
         players[i].action = ACTION_STATIONARY;
         players[i].actionCount = 0;
         players[i].actionOnePressed = 0;
@@ -442,8 +446,8 @@ void LoadGameScreen(void)
             players[i].bullets[j].size = 16;
             players[i].bullets[j].speed = 4;
             players[i].bullets[j].direction = DIRECTION_DOWN;
-            players[i].bullets[j].spriteOneIndex = SPRITE_VRAM_OFFSET + 8;
-            players[i].bullets[j].spriteTwoIndex = SPRITE_VRAM_OFFSET + 10;
+            players[i].bullets[j].spriteOneIndex = SPRITE_VRAM_OFFSET + 5;
+            players[i].bullets[j].spriteTwoIndex = SPRITE_VRAM_OFFSET + 7;
         }
     }
 
@@ -458,7 +462,7 @@ void LoadGameScreen(void)
         enemyBullets[i].size = 14;
         enemyBullets[i].speed = ENEMY_BULLET_SPEED_DEFAULT;
         enemyBullets[i].direction = DIRECTION_DOWN;
-        enemyBullets[i].spriteOneIndex = SPRITE_VRAM_OFFSET + 12;
+        enemyBullets[i].spriteOneIndex = SPRITE_VRAM_OFFSET + 13;
         enemyBullets[i].spriteTwoIndex = 0;
         
         // Initialize the subpixel movement variables
@@ -611,6 +615,13 @@ void HandleGameScreen(void)
         UpdatePlayerAnimations(i);
         UpdateBullets(i);
     }
+    playerBulletAnimCounter++;
+    if(playerBulletAnimCounter > PLAYER_BULLET_ANIM_HOLD)
+    {
+        playerBulletAnimCounter = 0;
+        playerBulletAnimFrame++;
+        if(playerBulletAnimFrame > 1) playerBulletAnimFrame = 0;
+    }
 
     // Update general functions
     UpdateEnemyBullets();
@@ -641,8 +652,8 @@ void RenderSprites(void)
         {
             if(players[i].bullets[j].isVisible)
             {
-                SMS_addSprite(players[i].bullets[j].spriteX - 8, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteOneIndex);
-                SMS_addSprite(players[i].bullets[j].spriteX, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteTwoIndex);
+                SMS_addSprite(players[i].bullets[j].spriteX - 8, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteOneIndex + (playerBulletAnimFrame << 2));
+                SMS_addSprite(players[i].bullets[j].spriteX, players[i].bullets[j].spriteY - 8, players[i].bullets[j].spriteTwoIndex + (playerBulletAnimFrame << 2));
             }
         }
     }
@@ -652,13 +663,13 @@ void RenderSprites(void)
     {
         if(enemyBullets[j].isVisible)
         {
-            SMS_addSprite(enemyBullets[j].spriteX - 4, enemyBullets[j].spriteY - 4, enemyBullets[j].spriteOneIndex);
+            SMS_addSprite(enemyBullets[j].spriteX - 4, enemyBullets[j].spriteY - 4, enemyBullets[j].spriteOneIndex + enemyBulletAnimFrame);
         }
     }
 
     // Render UI, shared between players
-    SMS_addSprite(UI_X, UI_Y, 366);
-    SMS_addSprite(UI_X + 8, UI_Y, 368);
+    SMS_addSprite(UI_X, UI_Y, 390);
+    SMS_addSprite(UI_X + 8, UI_Y, 392);
 
     if(numFactories > 9)
     {
@@ -700,13 +711,13 @@ void RenderSpritesUnsafe(void)
         if(playerStreamTurn == 4)
         {
             SMS_mapROMBank(player_tiles_bin_bank);
-            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_ONE].animationFrameData[playersSprites[PLAYER_ONE].currentAnimationFrame]]);
+            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[players[PLAYER_ONE].animationFrameData[players[PLAYER_ONE].currentAnimationFrame]]);
         }
         else if(playerStreamTurn == 8)
         {
             playerStreamTurn = 0;
             SMS_mapROMBank(player2_tiles_bin_bank);
-            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_TWO].ramDataAddress, &player2_tiles_bin[playersSprites[PLAYER_TWO].animationFrameData[playersSprites[PLAYER_TWO].currentAnimationFrame]]);
+            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_TWO].ramDataAddress, &player2_tiles_bin[players[PLAYER_TWO].animationFrameData[players[PLAYER_TWO].currentAnimationFrame]]);
             SMS_mapROMBank(player_tiles_bin_bank);
         }
         playerStreamTurn++;
@@ -716,7 +727,7 @@ void RenderSpritesUnsafe(void)
         if(playerStreamTurn == 8)
         {
             playerStreamTurn = 0;
-            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[playersSprites[PLAYER_ONE].animationFrameData[playersSprites[PLAYER_ONE].currentAnimationFrame]]);
+            UNSAFE_SMS_VRAMmemcpy128(players[PLAYER_ONE].ramDataAddress, &player_tiles_bin[players[PLAYER_ONE].animationFrameData[players[PLAYER_ONE].currentAnimationFrame]]);
         }
         playerStreamTurn++;
     }
@@ -725,51 +736,51 @@ void RenderSpritesUnsafe(void)
 void UpdatePlayerAnimations(char i)
 {
     // Update animation frames
-    if(playersSprites[i].animationFrameCounter > PLAYER_ANIMATION_HOLD_DURATION)
+    if(players[i].animationFrameCounter > PLAYER_ANIMATION_HOLD_DURATION)
     {
-        playersSprites[i].animationFrameCounter = 0;
-        playersSprites[i].currentAnimationFrame++;
-        if(playersSprites[i].currentAnimationFrame == playersSprites[i].animationFrameDataCount) playersSprites[i].currentAnimationFrame = 0;
+        players[i].currentAnimationFrame++;
+        players[i].animationFrameCounter = 0;
+        if(players[i].currentAnimationFrame == players[i].animationFrameDataCount) players[i].currentAnimationFrame = 0;
     }
-    playersSprites[i].animationFrameCounter++;
+    players[i].animationFrameCounter++;
 
     // Update which animation to play
     switch (playersSprites[i].direction)
     {
         case DIRECTION_UP:
-            if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveUp);
-            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimRoarLeft);
-            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimShootUp);
-            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimStunLeft);
-            else setSpriteAnimation(&playersSprites[i], playerAnimIdleUp);
+            if(players[i].action == ACTION_MOVE) setPlayerAnimation(&players[i], playerAnimMoveUp);
+            else if(players[i].action == ACTION_ONE) setPlayerAnimation(&players[i], playerAnimRoarLeft);
+            else if(players[i].action == ACTION_TWO) setPlayerAnimation(&players[i], playerAnimShootUp);
+            else if(players[i].action == ACTION_STUN) setPlayerAnimation(&players[i], playerAnimStunLeft);
+            else setPlayerAnimation(&players[i], playerAnimIdleUp);
         break;
 
         case DIRECTION_DOWN:
-            if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveDown);
-            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimRoarRight);
-            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimShootDown);
-            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimStunRight);
-            else setSpriteAnimation(&playersSprites[i], playerAnimIdleDown);
+            if(players[i].action == ACTION_MOVE) setPlayerAnimation(&players[i], playerAnimMoveDown);
+            else if(players[i].action == ACTION_ONE) setPlayerAnimation(&players[i], playerAnimRoarRight);
+            else if(players[i].action == ACTION_TWO) setPlayerAnimation(&players[i], playerAnimShootDown);
+            else if(players[i].action == ACTION_STUN) setPlayerAnimation(&players[i], playerAnimStunRight);
+            else setPlayerAnimation(&players[i], playerAnimIdleDown);
         break;
 
         case DIRECTION_LEFT:
         case DIRECTION_UP_LEFT:
         case DIRECTION_DOWN_LEFT:
-            if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveLeft);
-            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimRoarLeft);
-            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimShootLeft);
-            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimStunLeft);
-            else setSpriteAnimation(&playersSprites[i], playerAnimIdleLeft);
+            if(players[i].action == ACTION_MOVE) setPlayerAnimation(&players[i], playerAnimMoveLeft);
+            else if(players[i].action == ACTION_ONE) setPlayerAnimation(&players[i], playerAnimRoarLeft);
+            else if(players[i].action == ACTION_TWO) setPlayerAnimation(&players[i], playerAnimShootLeft);
+            else if(players[i].action == ACTION_STUN) setPlayerAnimation(&players[i], playerAnimStunLeft);
+            else setPlayerAnimation(&players[i], playerAnimIdleLeft);
         break;
 
         case DIRECTION_RIGHT:
         case DIRECTION_UP_RIGHT:
         case DIRECTION_DOWN_RIGHT:
-            if(players[i].action == ACTION_MOVE) setSpriteAnimation(&playersSprites[i], playerAnimMoveRight);
-            else if(players[i].action == ACTION_ONE) setSpriteAnimation(&playersSprites[i], playerAnimRoarRight);
-            else if(players[i].action == ACTION_TWO) setSpriteAnimation(&playersSprites[i], playerAnimShootRight);
-            else if(players[i].action == ACTION_STUN) setSpriteAnimation(&playersSprites[i], playerAnimStunRight);
-            else setSpriteAnimation(&playersSprites[i], playerAnimIdleRight);
+            if(players[i].action == ACTION_MOVE) setPlayerAnimation(&players[i], playerAnimMoveRight);
+            else if(players[i].action == ACTION_ONE) setPlayerAnimation(&players[i], playerAnimRoarRight);
+            else if(players[i].action == ACTION_TWO) setPlayerAnimation(&players[i], playerAnimShootRight);
+            else if(players[i].action == ACTION_STUN) setPlayerAnimation(&players[i], playerAnimStunRight);
+            else setPlayerAnimation(&players[i], playerAnimIdleRight);
         break;
     }
 
@@ -1339,16 +1350,6 @@ void UpdateBullets(char i)
     {
         if(players[i].bullets[j].isVisible)
         {
-            // players[i].bullets[j].animationFrameCounter++;
-            // if(players[i].bullets[j].animationFrameCounter > 20)
-            // {
-            //     players[i].bullets[j].currentAnimationFrame++;
-            //     if(players[i].bullets[j].currentAnimationFrame == players[i].bullets[j].animationFrameDataCount)
-            //     {
-            //         players[i].bullets[j].currentAnimationFrame = 0;
-            //     }
-            // }
-
             // Move bullets based on and direction
             switch (players[i].bullets[j].direction)
             {
@@ -1464,6 +1465,14 @@ void MetatileFactoryHit(unsigned char *metatile)
 
 void UpdateEnemyBullets(void)
 {
+    enemyBulletAnimCounter++;
+    if(enemyBulletAnimCounter > ENEMY_BULLET_ANIM_HOLD)
+    {
+        enemyBulletAnimCounter = 0;
+        enemyBulletAnimFrame++;
+        if(enemyBulletAnimFrame > 3) enemyBulletAnimFrame = 0;
+    }
+
     enemyBulletForCollisionUpdate++;
     if(enemyBulletForCollisionUpdate == ENEMY_BULLET_COUNT) enemyBulletForCollisionUpdate = 0;
 

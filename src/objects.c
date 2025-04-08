@@ -10,10 +10,6 @@ struct SpriteObject
     unsigned char isVisible;
     unsigned char size;
     unsigned char speed;
-    unsigned char animationFrameCounter;
-    unsigned char currentAnimationFrame;
-    unsigned char animationFrameDataCount;
-    unsigned int animationFrameData[8];
     unsigned char direction;
     unsigned int spriteOneIndex;
     unsigned int spriteTwoIndex;
@@ -37,6 +33,10 @@ struct PlayerObject
     unsigned char inputVertical;
     unsigned char inputHorizontal;
     unsigned char walkTileCheckIndex;
+    unsigned char animationFrameCounter;
+    unsigned char currentAnimationFrame;
+    unsigned char animationFrameDataCount;
+    unsigned int animationFrameData[8];
     struct SpriteObject bullets[PLAYER_BULLET_COUNT];
 };
 
@@ -183,7 +183,7 @@ const struct TilePair shootableTilePairs[MAX_TILE_PAIRS_SHOOTABLE] =
 };
 
 // Sprite Animation and Collision Functions Start
-void setSpriteAnimation(struct SpriteObject *spriteObject, const unsigned int *data)
+void setPlayerAnimation(struct PlayerObject *spriteObject, const unsigned int *data)
 {
     for(char i = 0; i < spriteObject->animationFrameDataCount; ++i)
     {

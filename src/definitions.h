@@ -12,7 +12,6 @@
 #define DIRECTION_DOWN_LEFT  	7
 #define DIRECTION_DOWN_RIGHT  	8
 
-
 // Granular direction system
 #define DIRECTION_GRANULAR_COUNT    256
 #define DIRECTION_GRID_SIZE 32
@@ -464,6 +463,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define PLAYER_STUN_FRAME_COUNT         20
 #define PLAYER_COLLISION_VALUE  	    1
 #define PLAYER_ANIMATION_HOLD_DURATION  8
+#define PLAYER_BULLET_ANIM_HOLD         8
 #define PLAYER_BULLET_COUNT             3
 #define PLAYER_SPEED_DEFAULT            2
 #define PLAYER_SPEED_DIAGONAL           1
@@ -488,6 +488,7 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define GAME_STATE_END          3
 
 // Enemy Defines
+#define ENEMY_BULLET_ANIM_HOLD      4
 #define ENEMY_BULLET_COUNT          4
 #define ENEMY_BULLET_SPEED_DEFAULT  2
 #define MAX_ACTIVE_TURRETS          16
