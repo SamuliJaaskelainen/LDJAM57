@@ -22,3 +22,6 @@ extern const unsigned char	font_tiles_bin[3040];
 extern const unsigned char	kaijulike_psg[1189];
 #define				kaijulike_psg_size 1189
 #define				kaijulike_psg_bank 2
+extern const unsigned char	text_psg[31];
+#define				text_psg_size 31
+#define				text_psg_bank 2

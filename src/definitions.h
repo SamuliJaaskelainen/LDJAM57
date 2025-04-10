@@ -512,9 +512,24 @@ unsigned char GetDirectionFromVector(signed int dx, signed int dy) {
 #define SFX_MAP                 4
 #define SFX_ROAR                5
 #define SFX_PLAYER_SHOOT        6
+#define SFX_TEXT                7
 
 // Data loading offsets
 #define FONT_VRAM_OFFSET 320
 #define SPRITE_VRAM_OFFSET 352
+
+const unsigned char *emptyChar = " ";
+const unsigned char *story[10][24] = {
+    {"M","a","n"," ","h","a","s"," ","u","p","s","e","t"," ","n","a","t","u","r","e"," "," "," "," "},
+    {"c","o","v","e","r","i","n","g"," ","t","h","e"," ","l","a","n","d"," ","i","n"," "," "," "," "},
+    {"s","t","e","e","l"," ","a","n","d"," ","a","s","p","h","a","l","t","."," "," "," "," "," "," "},
+    {"T","h","i","s"," ","h","a","s"," ","t","h","r","o","w","n"," ","o","f","f"," "," "," "," "," "},
+    {"t","h","e"," ","n","a","t","u","r","a","l"," ","v","i","b","e","."," "," "," "," "," "," "," "},
+    {"S","o"," ","f","r","o","m"," ","t","h","e"," ","d","e","p","t","h","s"," ","r","i","s","e"," "},
+    {"N","a","t","u","r","e","'","s"," ","i","m","m","u","n","e"," ","s","y","s","t","e","m"," "," "},
+    {"i","n"," ","t","h","e"," ","f","o","r","m"," ","o","f"," ","a"," ","w","a","r","r","i","o","r"},
+    {"t","o"," ","m","e","n","d"," ","t","h","e"," ","v","i","b","e","."," "," "," "," "," "," "," "},
+    {"F","r","o","m"," ","t","h","e"," ","d","e","p","t","h","s"," ","r","i","s","e",".",".","."," "}
+};
 
 #endif /* DEFINITIONS_H */

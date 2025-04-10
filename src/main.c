@@ -116,9 +116,6 @@ unsigned char bulletShootTimer = 0;
 unsigned char bulletShootRate = 10;
 unsigned char bulletShootDir = 1;
 
-unsigned int keyStatus = 0;
-unsigned char playerTwoJoined = 0;
-unsigned char endCounter = 0;
 
 // Copy of the map in ram
 unsigned char scrolltable[ugtbatch_scrolltable_bin_size];
@@ -129,6 +126,9 @@ unsigned char lastRandomDirection = 0;
 unsigned char lastClockwiseDirection = 0;
 
 // Gamestate and counters
+unsigned int keyStatus = 0;
+unsigned char playerTwoJoined = 0;
+unsigned char endCounter = 0;
 unsigned char gameState = GAME_STATE_GAME;
 unsigned char numFactories = MAX_FACTORY_NUM; // when this reaches 0, game is won
 unsigned int numFactoriesSpriteIdOne = 0;
@@ -143,6 +143,9 @@ unsigned char playerBulletAnimCounter = 0;
 unsigned char enemyBulletAnimFrame = 0;
 unsigned char playerBulletAnimFrame = 0;
 unsigned char frameCounter = 0;
+unsigned char menuLetter = 0;
+unsigned char menuRow = 0;
+unsigned char menuCounter = 0;
 
 struct PlayerObject players[PLAYER_COUNT];
 struct SpriteObject playersSprites[PLAYER_COUNT];
@@ -246,6 +249,11 @@ void LoadAndPlaySFX(char sfx)
             SMS_mapROMBank(shoot0_psg_bank);
             PSGSFXPlay(&shoot0_psg, SFX_CHANNEL0);
         break;
+
+        case SFX_TEXT:
+            SMS_mapROMBank(text_psg_bank);
+            PSGSFXPlay(&text_psg, SFX_CHANNEL0);
+        break;
     }
 }
 
@@ -310,17 +318,9 @@ void LoadStoryScreen(void)
     SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
     SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
     SMS_printatXY(5, 3, "STORY");
-
-    SMS_printatXY(5, 5, "Man has upset nature");
-    SMS_printatXY(5, 6, "covering the land in");
-    SMS_printatXY(5, 7, "steel and asphalt.");
-    SMS_printatXY(5, 8, "This has thrown off");
-    SMS_printatXY(5, 9, "the natural vibe.");
-    SMS_printatXY(5, 10, "So from the depths rise");
-    SMS_printatXY(5, 11, "Nature's immune system");
-    SMS_printatXY(5, 12, "in the form of a warrior");
-    SMS_printatXY(5, 13, "to mend the vibe.");
-    SMS_printatXY(5, 14, "From the depths rise...");
+    menuRow = 0;
+    menuLetter = 0;
+    menuCounter = 0;
 
     SMS_printatXY(10, 17, "Press START");
     // Loading complete, start display
@@ -478,6 +478,20 @@ void LoadGameScreen(void)
     numFactories = MAX_FACTORY_NUM;
     playerTwoJoined = 0;
     endCounter = 0;
+    gameState = GAME_STATE_GAME;
+    numFactories = MAX_FACTORY_NUM; // when this reaches 0, game is won
+    numFactoriesSpriteIdOne = 0;
+    numFactoriesSpriteIdTwo = 0;
+    playerStreamTurn = 0;
+    enemyBulletForCollisionUpdate = 0;
+    enemyBulletAnimCounter = 0;
+    playerBulletAnimCounter = 0;
+    enemyBulletAnimFrame = 0;
+    playerBulletAnimFrame = 0;
+    frameCounter = 0;
+    menuButtonPressed = 0;
+
+    // Initialize UI
     UpdateNumFactoriesSpriteIds();
   
     // Initialize turrets
@@ -535,6 +549,29 @@ void HandleTitleScreen(void)
 
 void HandleStoryScreen(void)
 {
+    menuCounter++;
+    if(menuCounter > 3)
+    {
+        menuCounter = 0;
+
+        if(menuRow < 10)
+        {
+            if(story[menuRow][menuLetter] != emptyChar)
+            {
+                LoadAndPlaySFX(SFX_TEXT);
+            }
+            
+            SMS_printatXY(5 + menuLetter, 5 + menuRow, story[menuRow][menuLetter]);
+            menuLetter++;
+            
+            if(menuLetter > 23)
+            {
+                menuLetter = 0;
+                menuRow++;
+            }
+        }
+    }
+
     menuStartFlasher++;
     if(menuStartFlasher > 20)
     {
@@ -562,8 +599,26 @@ void HandleStoryScreen(void)
     {
         if (keyStatus & PORT_A_KEY_1)
         {
-            menuButtonPressed = 1;
-            LoadGameScreen();
+            if(menuRow < 10)
+            {
+                menuButtonPressed = 1;
+                while(menuRow < 10)
+                {
+                    SMS_printatXY(5 + menuLetter, 5 + menuRow, story[menuRow][menuLetter]);
+                    menuLetter++;
+                    if(menuLetter > 23)
+                    {
+                        menuLetter = 0;
+                        menuRow++;
+                    }
+                }
+            }
+            else
+            {
+                menuButtonPressed = 1;
+                LoadGameScreen();
+            }
+
         }
     }
 }
@@ -674,7 +729,7 @@ void RenderSprites(void)
     if(numFactories > 9)
     {
         SMS_addSprite(UI_X + 17, UI_Y, numFactoriesSpriteIdOne);
-        SMS_addSprite(UI_X + 25,UI_Y, numFactoriesSpriteIdTwo);
+        SMS_addSprite(UI_X + 25, UI_Y, numFactoriesSpriteIdTwo);
     }
     else
     {
