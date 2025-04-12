@@ -1,6 +1,14 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
+// Game meta info
+#define VERSION_MAJOR  	    1
+#define VERSION_MINOR  	    2
+#define RELEASE_YEAR  	    2025
+#define RELEASE_MONTH  	    4
+#define RELEASE_DAY  	    12
+
+
 // Player Direction Defines
 #define DIRECTION_NONE  	    255
 #define DIRECTION_UP 			1

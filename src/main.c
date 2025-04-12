@@ -153,7 +153,7 @@ struct SpriteObject enemyBullets[ENEMY_BULLET_COUNT];
 
 // Header
 SMS_EMBED_SEGA_ROM_HEADER(999, 0);
-SMS_EMBED_SDSC_HEADER(1, 0, 2024, 9, 24, "Samuli", "LDJAM57", "Love");
+SMS_EMBED_SDSC_HEADER(VERSION_MAJOR, VERSION_MINOR, RELEASE_YEAR, RELEASE_MONTH, RELEASE_DAY, "Samuli", "Goodzilla", "Love");
 
 void main(void)
 {
@@ -270,16 +270,26 @@ void LoadTitleScreen(void)
 
     // Setup VPD
     SMS_VRAMmemsetW(0, 0, 0);
+#ifdef TARGET_GG
+    GG_loadSpritePalette(black_palette_bin);
+#else
     SMS_loadSpritePalette(black_palette_bin);
+#endif
     SMS_VDPturnOffFeature(VDPFEATURE_HIDEFIRSTCOL);
     SMS_waitForVBlank();
     SMS_displayOff();
     SMS_setBGScrollX(0);
     SMS_setBGScrollY(0);
     
+
+
     // Load the title screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
+#ifdef TARGET_GG
+    GG_loadBGPalette(&startendpalette_pal_bin);
+#else
     SMS_loadBGPalette(&startendpalette_pal_bin);
+#endif
     SMS_loadTiles(&start_tiles_bin, 0, start_tiles_bin_size);
     SMS_VRAMmemsetW(XYtoADDR(0,0), 142, 2048);
     SMS_loadTileMap(0,5,&start_map_bin, start_map_bin_size);
@@ -304,7 +314,11 @@ void LoadStoryScreen(void)
 
     // Setup VPD
     SMS_VRAMmemsetW(0, 0, 0);
+#ifdef TARGET_GG
+    GG_loadSpritePalette(black_palette_bin);
+#else
     SMS_loadSpritePalette(black_palette_bin);
+#endif
     SMS_VDPturnOffFeature(VDPFEATURE_HIDEFIRSTCOL);
     SMS_waitForVBlank();
     SMS_displayOff();
@@ -313,7 +327,11 @@ void LoadStoryScreen(void)
     
     // Load the title screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
+#ifdef TARGET_GG
+    GG_loadBGPalette (&startendpalette_pal_bin);
+#else
     SMS_loadBGPalette(&startendpalette_pal_bin);
+#endif
     SMS_mapROMBank(font_tiles_bin_bank);
     SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
     SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
@@ -334,7 +352,11 @@ void LoadEndScreen(void)
 
     // Setup VPD
     SMS_VRAMmemsetW(0, 0, 0);
+#ifdef TARGET_GG
+    GG_loadSpritePalette(black_palette_bin);
+#else
     SMS_loadSpritePalette(black_palette_bin);
+#endif
     SMS_VDPturnOffFeature(VDPFEATURE_HIDEFIRSTCOL);
     SMS_waitForVBlank();
     SMS_displayOff();
@@ -343,7 +365,11 @@ void LoadEndScreen(void)
     
     // Load the end screen tiles and data
     SMS_mapROMBank(startendpalette_pal_bin_bank);
+#ifdef TARGET_GG
+    GG_loadBGPalette (&startendpalette_pal_bin);
+#else
     SMS_loadBGPalette(&startendpalette_pal_bin);
+#endif
     SMS_mapROMBank(font_tiles_bin_bank);
     SMS_loadTiles(&font_tiles_bin, FONT_VRAM_OFFSET, font_tiles_bin_size);
     SMS_configureTextRenderer(FONT_VRAM_OFFSET - 32);
@@ -375,10 +401,17 @@ void LoadGameScreen(void)
     SMS_VDPturnOnFeature(VDPFEATURE_HIDEFIRSTCOL);
     SMS_setSpriteMode(SPRITEMODE_TALL);
     SMS_VRAMmemsetW(0, 0, 0);
+#ifdef TARGET_GG
+    SMS_mapROMBank(ugtbatch_palette_bin_bank);
+    GG_loadBGPalette(&ugtbatch_palette_bin);
+    SMS_mapROMBank(spritepalette_pal_bin_bank);
+    GG_loadSpritePalette(&spritepalette_pal_bin);
+#else
     SMS_mapROMBank(ugtbatch_palette_bin_bank);
     SMS_loadBGPalette(&ugtbatch_palette_bin);
     SMS_mapROMBank(spritepalette_pal_bin_bank);
     SMS_loadSpritePalette(&spritepalette_pal_bin);
+#endif
     SMS_mapROMBank(ugtbatch_tiles_bin_bank);
     SMS_loadTiles(&ugtbatch_tiles_bin, 0, ugtbatch_tiles_bin_size);
     SMS_mapROMBank(pollen_tiles_bin_bank);
@@ -499,8 +532,13 @@ void LoadGameScreen(void)
     InitTurrets();
 
     // Reload sprite palette after loading flicker animation
+#ifdef TARGET_GG
+    SMS_mapROMBank(spritepalette_pal_bin_bank);
+    GG_loadSpritePalette(&spritepalette_pal_bin);
+#else
     SMS_mapROMBank(spritepalette_pal_bin_bank);
     SMS_loadSpritePalette(&spritepalette_pal_bin);
+#endif
 
     // Init audio & play music
     LoadAndPlayMusic();
@@ -1746,8 +1784,13 @@ void ScanMapForTurrets(void)
         if(colorChangeCounter > 8)
         {
             color++;
+#ifdef TARGET_GG
+            GG_setColor(color);
+            GG_setNextSpriteColoratIndex(0);
+#else
             SMS_setColor(color);
             SMS_setNextSpriteColoratIndex(0);
+#endif
             colorChangeCounter = 0;
         }
 
@@ -1775,7 +1818,11 @@ void ScanMapForTurrets(void)
     }
     
     // Reset the color after scanning is complete
+#ifdef TARGET_GG
+    GG_setColor(0);
+#else
     SMS_setColor(0);
+#endif
 }
 
 void CheckTurretsInBoundingBox(void)
